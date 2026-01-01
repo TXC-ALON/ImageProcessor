@@ -6,16 +6,35 @@ from PyQt5.QtWidgets import (QPushButton, QTableView, QAbstractItemView,
                              QGroupBox, QFormLayout, QLineEdit, QComboBox,
                              QCheckBox, QHBoxLayout, QWidget, QVBoxLayout)
 
+from core.init import config
+
 class ImageTableModel(QAbstractTableModel):
     order_changed = pyqtSignal()
 
     def __init__(self, images: List[ImageContainer]):
         super().__init__()
         self.images = images
-        self.headers = [
+        self.all_headers = [
             "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
             "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
         ]
+        self.update_visible_headers()
+    
+    def update_visible_headers(self):
+        """更新可见表头"""
+        visible_columns = config.get_table_visible_columns()
+        self.headers = []
+        self.column_mapping = []  # 存储可见列在all_headers中的索引
+        
+        for i, header in enumerate(self.all_headers):
+            if header in visible_columns:
+                self.headers.append(header)
+                self.column_mapping.append(i)
+        
+        # 如果配置为空，显示所有列
+        if not self.headers:
+            self.headers = self.all_headers.copy()
+            self.column_mapping = list(range(len(self.all_headers)))
 
     def rowCount(self, parent=None):
         return len(self.images)
@@ -36,6 +55,12 @@ class ImageTableModel(QAbstractTableModel):
     def _get_display_data(self, index):
         img = self.images[index.row()]
         col = index.column()
+        
+        # 获取实际的数据列索引
+        if col < len(self.column_mapping):
+            actual_col = self.column_mapping[col]
+        else:
+            return None
 
         mapping = [
             img.path.name,
@@ -51,7 +76,7 @@ class ImageTableModel(QAbstractTableModel):
             getattr(img, '_param_dict', {}).get('datetime', 'N/A'),
             getattr(img, '_param_dict', {}).get('geo_info', 'N/A')
         ]
-        return mapping[col] if col < len(mapping) else None
+        return mapping[actual_col] if actual_col < len(mapping) else None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:

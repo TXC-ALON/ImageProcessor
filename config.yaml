@@ -6,11 +6,11 @@ base:
   font: ./resources/fonts/AlibabaPuHuiTi-2-45-Light.otf
   font_size: 1
   input_dir: ./input
-  last_opened_dir: "H:/00/[\u6C34\u84EE\u306E\u5BBF (\u6D45\u5DDD)] \u589C\u6B61\u91CD\
-    \u62FE\u4E4B\u590F1~5[\u7121\u4FEE\u6B63][\u9B3C\u755C\u738B\u6C49\u5316\u7EC4\
-    ][lawelss\u4E2A\u4EBA\u91CD\u5D4C] [576p+920M]/[\u6C34\u84EE\u306E\u5BBF (\u6D45\
-    \u5DDD)] \u590F\u306E\u30E4\u30EA\u306A\u304A\u30575 -\u590F\u3068\u7530\u820E\
-    \u3068\u5E7C\u99B4\u67D3\u306E\u6BCD- [LCY\u4E2A\u4EBA\u6C49\u5316][lawelss\u4E2A\
+  last_opened_dir: "H:\\00\\[\u6C34\u84EE\u306E\u5BBF (\u6D45\u5DDD)] \u589C\u6B61\
+    \u91CD\u62FE\u4E4B\u590F1~5[\u7121\u4FEE\u6B63][\u9B3C\u755C\u738B\u6C49\u5316\
+    \u7EC4][lawelss\u4E2A\u4EBA\u91CD\u5D4C] [576p+920M]\\[\u6C34\u84EE\u306E\u5BBF\
+    \ (\u6D45\u5DDD)] \u590F\u306E\u30E4\u30EA\u306A\u304A\u30575 -\u590F\u3068\u7530\
+    \u820E\u3068\u5E7C\u99B4\u67D3\u306E\u6BCD- [LCY\u4E2A\u4EBA\u6C49\u5316][lawelss\u4E2A\
     \u4EBA\u91CD\u5D4C][\u7121\u4FEE\u6B63]"
   output_dir: G:/Dev/PhotoYin/ImageProcesser/output
   quality: 100
@@ -21,6 +21,15 @@ global:
     enable: false
   shadow:
     enable: false
+  table_columns:
+    visible_columns:
+    - "\u6587\u4EF6\u540D"
+    - "\u76F8\u673A\u54C1\u724C"
+    - "\u76F8\u673A\u578B\u53F7"
+    - "\u955C\u5934\u578B\u53F7"
+    - "\u7126\u8DDD"
+    - "\u5149\u5708"
+    - ISO
   white_margin:
     enable: true
     width: 3

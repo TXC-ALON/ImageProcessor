@@ -273,3 +273,20 @@ class Config(object):
     def set_default_logo_path(self, logo_path):
         self._data["logo"]['default']['path'] = logo_path
         self.save()
+
+    def get_table_visible_columns(self):
+        """获取表格可见列配置"""
+        if 'table_columns' in self._data['global'] and 'visible_columns' in self._data['global']['table_columns']:
+            return self._data['global']['table_columns']['visible_columns']
+        # 默认返回所有列
+        return [
+            "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
+            "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
+        ]
+
+    def set_table_visible_columns(self, visible_columns):
+        """设置表格可见列配置"""
+        if 'table_columns' not in self._data['global']:
+            self._data['global']['table_columns'] = {}
+        self._data['global']['table_columns']['visible_columns'] = visible_columns
+        self.save()

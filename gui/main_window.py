@@ -33,6 +33,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("图片处理程序")
         self.resize(1200, 600)
 
+        # 创建菜单栏
+        self.create_menu_bar()
+
         # 创建左侧面板
         left_panel = self.create_left_panel()
 
@@ -565,3 +568,146 @@ class MainWindow(QMainWindow):
         
         QMessageBox.information(self, "处理完成", message)
         print(f"处理完成，文件已输出至 {config.get_output_dir()} 文件夹中")
+
+    def create_menu_bar(self):
+        """创建菜单栏"""
+        menubar = self.menuBar()
+        
+        # 文件菜单
+        file_menu = menubar.addMenu("文件")
+        
+        # 打开文件动作
+        open_file_action = QAction("打开文件", self)
+        open_file_action.setShortcut("Ctrl+O")
+        open_file_action.triggered.connect(self.on_open_images)
+        file_menu.addAction(open_file_action)
+        
+        # 打开文件夹动作
+        open_folder_action = QAction("打开文件夹", self)
+        open_folder_action.setShortcut("Ctrl+Shift+O")
+        open_folder_action.triggered.connect(self.on_open_folder)
+        file_menu.addAction(open_folder_action)
+        
+        file_menu.addSeparator()
+        
+        # 退出动作
+        exit_action = QAction("退出", self)
+        exit_action.setShortcut("Ctrl+Q")
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+        
+        # 设置菜单
+        settings_menu = menubar.addMenu("设置")
+        
+        # 表格列设置动作
+        table_columns_action = QAction("表格列设置", self)
+        table_columns_action.triggered.connect(self.open_table_columns_dialog)
+        settings_menu.addAction(table_columns_action)
+        
+        # 处理器配置动作
+        processor_config_action = QAction("处理器配置", self)
+        processor_config_action.triggered.connect(self.open_processor_dialog)
+        settings_menu.addAction(processor_config_action)
+        
+        # 帮助菜单
+        help_menu = menubar.addMenu("帮助")
+        
+        # 关于动作
+        about_action = QAction("关于", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
+    def open_table_columns_dialog(self):
+        """打开表格列设置对话框"""
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("表格列设置")
+        dialog.resize(400, 500)
+        
+        layout = QVBoxLayout()
+        
+        # 说明标签
+        label = QLabel("选择要在表格中显示的列（勾选表示显示）：")
+        layout.addWidget(label)
+        
+        # 列选择列表
+        list_widget = QListWidget()
+        list_widget.setSelectionMode(QListWidget.NoSelection)
+        
+        # 获取所有可用的列
+        all_headers = [
+            "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
+            "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
+        ]
+        
+        # 获取当前可见的列
+        visible_columns = config.get_table_visible_columns()
+        
+        # 添加所有列到列表，并设置勾选状态
+        for header in all_headers:
+            item = QListWidgetItem(header)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Checked if header in visible_columns else Qt.Unchecked)
+            list_widget.addItem(item)
+        
+        layout.addWidget(list_widget)
+        
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        
+        # 全选按钮
+        select_all_btn = QPushButton("全选")
+        select_all_btn.clicked.connect(lambda: self.set_all_items_checkstate(list_widget, Qt.Checked))
+        button_layout.addWidget(select_all_btn)
+        
+        # 全不选按钮
+        select_none_btn = QPushButton("全不选")
+        select_none_btn.clicked.connect(lambda: self.set_all_items_checkstate(list_widget, Qt.Unchecked))
+        button_layout.addWidget(select_none_btn)
+        
+        button_layout.addStretch()
+        
+        # 确定按钮
+        ok_btn = QPushButton("确定")
+        ok_btn.clicked.connect(dialog.accept)
+        button_layout.addWidget(ok_btn)
+        
+        # 取消按钮
+        cancel_btn = QPushButton("取消")
+        cancel_btn.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            # 获取选中的列
+            selected_columns = []
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                if item.checkState() == Qt.Checked:
+                    selected_columns.append(item.text())
+            
+            # 保存设置
+            config.set_table_visible_columns(selected_columns)
+            
+            # 更新表格模型
+            if hasattr(self, 'model'):
+                self.model.update_visible_headers()
+                self.model.layoutChanged.emit()
+            
+            self.statusBar().showMessage("表格列设置已更新", 2000)
+
+    def set_all_items_checkstate(self, list_widget, state):
+        """设置列表中所有项目的勾选状态"""
+        for i in range(list_widget.count()):
+            item = list_widget.item(i)
+            item.setCheckState(state)
+
+    def show_about_dialog(self):
+        """显示关于对话框"""
+        QMessageBox.about(self, "关于图片处理程序", 
+                         "图片处理程序 v1.0\n\n"
+                         "一个用于批量处理图片的应用程序，支持多种图片处理功能。\n\n"
+                         "作者: ImageProcessor Team")
