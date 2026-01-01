@@ -228,16 +228,31 @@ class MainWindow(QMainWindow):
 
     def on_open_images(self):
         """打开图片文件（追加模式）"""
+        # 获取上次打开的文件夹路径
+        last_dir = config.get_last_opened_dir()
+        
         paths, _ = QFileDialog.getOpenFileNames(
-            self, "选择图片", "", "图像文件 (*.jpg *.jpeg *.png *.tiff *.bmp *.gif *.webp)"
+            self, "选择图片", last_dir, "图像文件 (*.jpg *.jpeg *.png *.tiff *.bmp *.gif *.webp)"
         )
+        
+        if paths:
+            # 更新上次打开的文件夹路径（使用第一个文件的父目录）
+            first_file_path = Path(paths[0])
+            config.set_last_opened_dir(str(first_file_path.parent))
+            
         self.load_images_from_paths(paths, append=True)
 
     def on_open_folder(self):
         """打开文件夹导入图片（追加模式）"""
-        folder = QFileDialog.getExistingDirectory(self, "选择图片文件夹")
+        # 获取上次打开的文件夹路径
+        last_dir = config.get_last_opened_dir()
+        
+        folder = QFileDialog.getExistingDirectory(self, "选择图片文件夹", last_dir)
         if not folder:
             return
+
+        # 更新上次打开的文件夹路径
+        config.set_last_opened_dir(folder)
 
         image_extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif', '.webp'}
         paths = []

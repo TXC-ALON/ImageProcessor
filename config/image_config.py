@@ -111,6 +111,20 @@ class Config(object):
     def get_quality(self):
         return self._data['base']['quality']
 
+    def get_last_opened_dir(self):
+        """获取上次打开的文件夹路径"""
+        if 'last_opened_dir' in self._data['base']:
+            last_dir = self._data['base']['last_opened_dir']
+            # 检查路径是否存在，如果不存在则返回当前目录
+            if os.path.exists(last_dir):
+                return last_dir
+        return '.'  # 默认返回当前目录
+
+    def set_last_opened_dir(self, dir_path):
+        """设置上次打开的文件夹路径"""
+        self._data['base']['last_opened_dir'] = dir_path
+        self.save()
+
     def get_alternative_font(self):
         return ImageFont.truetype(self._data['base']['alternative_font'], self.get_font_size())
 
