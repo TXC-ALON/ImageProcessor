@@ -379,14 +379,7 @@ class MainWindow(QMainWindow):
         print(f"  前缀: {self.image_controls['prefix'].text()}")
         print(f"  后缀: {self.image_controls['suffix'].text()}")
         print(f"  格式: {self.image_controls['format'].currentText()}")
-        print(f"  质量: {self.image_controls['quality'].currentText()}")
-        print(f"  调整大小: {'是' if self.image_controls['resize_check'].isChecked() else '否'}")
-
-
-        if self.image_controls['resize_check'].isChecked():
-            print(f"  宽度: {self.image_controls['resize_width'].text()}")
-            print(f"  高度: {self.image_controls['resize_height'].text()}")
-
+        print(f"  质量: {self.image_controls['quality'].text()}%")
         print(f"  输出路径: {self.image_controls['output_path'].text()}")
 
         # 打印视频控制参数（需要先创建对应的控件）
@@ -515,6 +508,28 @@ class MainWindow(QMainWindow):
             processor_chain.add(WATERMARK_LEFT_LOGO_PROCESSOR)
             QMessageBox.information(self, "提示", "使用默认Processor配置")
 
+        # 获取UI控件中的参数
+        prefix = self.image_controls['prefix'].text().strip()
+        suffix = self.image_controls['suffix'].text().strip()
+        format_lower = self.image_controls['format'].currentText().lower()
+        
+        # 获取质量参数，确保在1-100范围内
+        try:
+            quality = int(self.image_controls['quality'].text().strip())
+            quality = max(1, min(100, quality))  # 限制在1-100范围内
+        except ValueError:
+            quality = 95  # 默认值
+            print(f"警告：质量参数无效，使用默认值 {quality}")
+        
+        # 获取输出目录
+        output_dir = self.image_controls['output_path'].text().strip()
+        if not output_dir:
+            output_dir = config.get_output_dir()
+        
+        # 创建输出目录
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        
         # 创建进度对话框
         progress = QProgressDialog("正在处理图片...", "取消", 0, len(file_list), self)
         progress.setWindowTitle("处理进度")
@@ -539,11 +554,35 @@ class MainWindow(QMainWindow):
                 container.is_use_equivalent_focal_length(config.use_equivalent_focal_length())
                 processor_chain.process(container)
                 
-                # 正确构建目标路径
-                target_path = Path(config.get_output_dir()).joinpath(source_path.name)
-                container.save(target_path, quality=config.get_quality())
+                # 构建目标文件名
+                source_stem = source_path.stem  # 原文件名（不含扩展名）
+                source_suffix = source_path.suffix  # 原扩展名
+                
+                # 如果后缀为空，使用时间戳
+                if not suffix:
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    actual_suffix = f"_{timestamp}"
+                else:
+                    actual_suffix = suffix
+                
+                # 构建新文件名：前缀 + 原文件名 + 后缀 + 格式扩展名
+                new_filename = f"{prefix}{source_stem}{actual_suffix}.{format_lower}"
+                target_path = output_path / new_filename
+                
+                # 确保文件名唯一
+                counter = 1
+                while target_path.exists():
+                    new_filename = f"{prefix}{source_stem}{actual_suffix}_{counter}.{format_lower}"
+                    target_path = output_path / new_filename
+                    counter += 1
+                
+                # 保存图片
+                container.save(target_path, quality=quality)
                 container.close()
                 processed_count += 1
+                
+                print(f"已保存: {target_path.name} (质量: {quality}%)")
                 
             except Exception as e:
                 logging.exception(f'Error: {str(e)}')
@@ -563,10 +602,14 @@ class MainWindow(QMainWindow):
         message = f"处理完成！\n成功处理: {processed_count} 张图片"
         if error_count > 0:
             message += f"\n处理失败: {error_count} 张图片（请查看控制台日志）"
-        message += f"\n输出目录: {config.get_output_dir()}"
+        message += f"\n输出目录: {output_dir}"
+        message += f"\n文件名格式: {prefix}[原文件名]{'[时间戳]' if not suffix else suffix}.{format_lower}"
+        message += f"\n图片质量: {quality}%"
         
         QMessageBox.information(self, "处理完成", message)
-        print(f"处理完成，文件已输出至 {config.get_output_dir()} 文件夹中")
+        print(f"处理完成，文件已输出至 {output_dir} 文件夹中")
+        print(f"文件名格式: {prefix}[原文件名]{'[时间戳]' if not suffix else suffix}.{format_lower}")
+        print(f"图片质量: {quality}%")
 
     def create_menu_bar(self):
         """创建菜单栏"""

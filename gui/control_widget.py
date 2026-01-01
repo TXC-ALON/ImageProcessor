@@ -11,17 +11,17 @@ def create_image_control_group(parent=None):
     group = QGroupBox("图片控制参数",parent)
     form = QFormLayout()
 
-    le_image_prefix = QLineEdit("IMG")
-    le_image_suffix = QLineEdit("_edited")
+    le_image_prefix = QLineEdit("Img_")
+    le_image_suffix = QLineEdit("")
     cb_image_format = QComboBox()
     cb_image_format.addItems(["JPG", "PNG", "TIFF", "WEBP"])
-    cb_image_quality = QComboBox()
-    cb_image_quality.addItems(["95%", "90%", "80%", "70%", "自定义"])
-    chk_image_resize = QCheckBox("调整大小")
-    le_image_resize_width = QLineEdit("1920")
-    le_image_resize_width.setPlaceholderText("宽度")
-    le_image_resize_height = QLineEdit("1080")
-    le_image_resize_height.setPlaceholderText("高度")
+    
+    # 图片质量改为数字输入框，范围1-100
+    le_image_quality = QLineEdit("100")
+    le_image_quality.setPlaceholderText("1-100")
+    le_image_quality.setToolTip("图片质量百分比 (1-100)")
+    
+    # 移除调整大小和分辨率相关控件
 
     # 新增：输出路径选择
     le_output_path = QLineEdit("")  # 默认值为output
@@ -52,14 +52,8 @@ def create_image_control_group(parent=None):
     form.addRow("前缀:", le_image_prefix)
     form.addRow("后缀:", le_image_suffix)
     form.addRow("格式:", cb_image_format)
-    form.addRow("质量:", cb_image_quality)
-    form.addRow(chk_image_resize)
-
-    resize_layout = QHBoxLayout()
-    resize_layout.addWidget(le_image_resize_width)
-    resize_layout.addWidget(le_image_resize_height)
-    form.addRow("分辨率:", resize_layout)
-
+    form.addRow("质量:", le_image_quality)
+    
     # 新增: 输出路径行
     form.addRow( path_layout)
     # 新增: 打开输出文件夹
@@ -76,13 +70,9 @@ def create_image_control_group(parent=None):
         'prefix': le_image_prefix,
         'suffix': le_image_suffix,
         'format': cb_image_format,
-        'quality': cb_image_quality,
-        'resize_check': chk_image_resize,
-        'resize_width': le_image_resize_width,
-        'resize_height': le_image_resize_height,
+        'quality': le_image_quality,  # 改为QLineEdit
         'browse_button': btn_browse_path,  # 新增浏览按钮引用
         'output_path': le_output_path,  # 新增输出路径控件引用
-
     }
 
 def create_video_control_group():
@@ -198,4 +188,3 @@ def open_output_path(path_line_edit):
         print("✅ 文件夹已打开！")
     else:
         print("❌ 打开文件夹失败! ")
-
