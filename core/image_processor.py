@@ -300,7 +300,7 @@ class DarkWatermarkRightLogoProcessor(WatermarkRightLogoProcessor):
 
 class DarkWatermarkLeftLogoProcessor(WatermarkLeftLogoProcessor):
     LAYOUT_ID = 'dark_watermark_left_logo'
-    LAYOUT_NAME = 'normal(黑红配色)'
+    LAYOUT_NAME = 'normal(黑红配色,Logo 居左)'
 
     def __init__(self, config: Config):
         super().__init__(config)
@@ -318,6 +318,7 @@ class DarkWatermarkLeftLogoProcessor(WatermarkLeftLogoProcessor):
 
 class PaddingToOriginalRatioProcessor(ProcessorComponent):
     LAYOUT_ID = 'padding_to_original_ratio'
+    LAYOUT_NAME = '调整画面比例'
 
     def process(self, container: ImageContainer) -> None:
         original_ratio = container.get_original_ratio() #画面的大小

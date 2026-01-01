@@ -4,10 +4,11 @@ from typing import List
 from PyQt5.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QLineEdit,
                              QComboBox, QCheckBox, QHBoxLayout, QWidget, QFileDialog, QMessageBox,
                              QStatusBar, QSplitter, QTableView, QAbstractItemView, QProgressDialog,
-                             QApplication, QMenu, QAction)
+                             QApplication, QMenu, QAction, QLabel, QTextEdit, QGroupBox)
 from PyQt5.QtCore import Qt
 from .image_table_model import ImageTableModel,create_control_buttons
 from .control_widget import create_image_control_group, create_video_control_group
+from .processor_control_dialog import ProcessorControlDialog
 
 from core.image_container import ImageContainer
 from core.image_processor import ProcessorChain
@@ -23,6 +24,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.video_controls = None
         self.image_controls = None
+        self.selected_processors = []  # 存储选中的Processor ID列表
         self.image_containers: List[ImageContainer] = []
         self.setup_ui()
 
@@ -51,6 +53,10 @@ class MainWindow(QMainWindow):
         left_panel = QWidget()
         left_layout = QVBoxLayout()
 
+        # Processor配置显示区域
+        processor_display_group = self.create_processor_display_group()
+        left_layout.addWidget(processor_display_group)
+
         # 图片控制参数
         image_group, self.image_controls = create_image_control_group(parent=self)
 
@@ -59,7 +65,7 @@ class MainWindow(QMainWindow):
 
         left_layout.addWidget(image_group)
         left_layout.addWidget(video_group)
-        left_panel.setLayout(left_layout)
+        
         # 添加打印参数按钮
         btn_print_params = QPushButton("打印所有参数")
         btn_print_params.clicked.connect(self.on_print_parameters)
@@ -70,7 +76,7 @@ class MainWindow(QMainWindow):
         btn_print_paths.clicked.connect(self.print_image_paths)
         left_layout.addWidget(btn_print_paths)
 
-        # 新增：打印图片路径按钮
+        # 新增：执行操作按钮
         btn_process = QPushButton("执行操作")
         btn_process.clicked.connect(self.process_chain)
         left_layout.addWidget(btn_process)
@@ -80,6 +86,94 @@ class MainWindow(QMainWindow):
 
         left_panel.setLayout(left_layout)
         return left_panel
+    
+    def create_processor_display_group(self):
+        """创建Processor配置显示区域"""
+        group = QGroupBox("Processor配置")
+        layout = QVBoxLayout()
+        
+        # 配置显示文本框
+        self.processor_display = QTextEdit()
+        self.processor_display.setReadOnly(True)
+        self.processor_display.setMaximumHeight(100)
+        self.processor_display.setPlaceholderText("未配置Processor")
+        
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        btn_configure = QPushButton("配置Processor")
+        btn_clear = QPushButton("清空配置")
+        
+        button_layout.addWidget(btn_configure)
+        button_layout.addWidget(btn_clear)
+        button_layout.addStretch()
+        
+        # 连接按钮信号
+        btn_configure.clicked.connect(self.open_processor_dialog)
+        btn_clear.clicked.connect(self.clear_processor_config)
+        
+        layout.addWidget(self.processor_display)
+        layout.addLayout(button_layout)
+        
+        group.setLayout(layout)
+        return group
+    
+    def open_processor_dialog(self):
+        """打开Processor配置对话框"""
+        dialog = ProcessorControlDialog(self, self.selected_processors)
+        if dialog.exec_() == QDialog.Accepted:
+            # 更新选中的Processor
+            self.selected_processors = dialog.get_selected_processors()
+            # 更新显示
+            self.update_processor_display()
+            print("Processor配置已更新")
+    
+    def clear_processor_config(self):
+        """清空Processor配置"""
+        reply = QMessageBox.question(
+            self, "确认清空", "确定要清空Processor配置吗？",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.selected_processors = []
+            self.update_processor_display()
+            print("Processor配置已清空")
+    
+    def update_processor_display(self):
+        """更新Processor配置显示"""
+        if not self.selected_processors:
+            self.processor_display.setText("未配置Processor")
+            return
+        
+        # 创建简单的显示文本
+        display_text = "当前Processor配置:\n"
+        
+        # 直接从LAYOUT_ITEMS和其他已知Processor中查找显示名称
+        from core.init import LAYOUT_ITEMS
+        
+        # 创建名称映射
+        name_map = {}
+        for layout_item in LAYOUT_ITEMS:
+            name_map[layout_item.value] = layout_item.name
+        
+        # 添加其他Processor的映射
+        additional_mappings = {
+            'rounded_corner_blur_shadow': '圆角,背景虚化,主图阴影 效果',
+            'rounded_corner_blur': '圆角加背景虚化效果',
+            'rounded_corner': '圆角效果',
+            'shadow': '阴影',
+            'margin': '边距',
+            'simple': '简洁',
+            'square': '1:1填充',
+            'padding_to_original_ratio': '填充到原始比例',
+            'pure_white_margin': '白色边框',
+        }
+        name_map.update(additional_mappings)
+        
+        for i, processor_id in enumerate(self.selected_processors):
+            display_name = name_map.get(processor_id, processor_id)
+            display_text += f"{i + 1}. {display_name}\n"
+        
+        self.processor_display.setText(display_text)
 
     def create_right_panel(self):
         """创建右侧显示面板"""
@@ -386,37 +480,73 @@ class MainWindow(QMainWindow):
         file_list = self.get_image_paths()
         if len(file_list) == 0:
             print("当前没有需要处理的图片")
+            QMessageBox.information(self, "提示", "当前没有需要处理的图片")
             return
         else:
             print('当前共有 {} 张图片待处理'.format(len(file_list)))
-        processor_chain = ProcessorChain()
-        # config.set_layout('background_blur')
-        processor_chain.add(ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR)
-        processor_chain.add(WATERMARK_LEFT_LOGO_PROCESSOR)
+        
+        # 使用用户选择的Processor链
+        if self.selected_processors:
+            # 创建临时对话框来获取Processor链
+            from .processor_control_dialog import ProcessorControlDialog
+            temp_dialog = ProcessorControlDialog(self, self.selected_processors)
+            processor_chain = temp_dialog.get_processor_chain()
+        else:
+            # 如果没有选择Processor，使用默认的
+            processor_chain = ProcessorChain()
+            processor_chain.add(ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR)
+            processor_chain.add(WATERMARK_LEFT_LOGO_PROCESSOR)
+            QMessageBox.information(self, "提示", "使用默认Processor配置")
 
-        for source_path in tqdm(file_list):
-            container = ImageContainer(source_path)
-            container.is_use_equivalent_focal_length(config.use_equivalent_focal_length())
+        # 创建进度对话框
+        progress = QProgressDialog("正在处理图片...", "取消", 0, len(file_list), self)
+        progress.setWindowTitle("处理进度")
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setMinimumDuration(0)  # 立即显示进度条
+        
+        processed_count = 0
+        error_count = 0
+        
+        for i, source_path in enumerate(file_list, 1):
+            # 更新进度条
+            progress.setLabelText(f"正在处理 ({i}/{len(file_list)}): {source_path.name}")
+            progress.setValue(i)
+            
+            # 处理取消操作
+            if progress.wasCanceled():
+                QMessageBox.information(self, "提示", "处理已取消")
+                return
+            
             try:
+                container = ImageContainer(source_path)
+                container.is_use_equivalent_focal_length(config.use_equivalent_focal_length())
                 processor_chain.process(container)
+                
+                # 正确构建目标路径
+                target_path = Path(config.get_output_dir()).joinpath(source_path.name)
+                container.save(target_path, quality=config.get_quality())
+                container.close()
+                processed_count += 1
+                
             except Exception as e:
                 logging.exception(f'Error: {str(e)}')
+                error_count += 1
                 if DEBUG:
                     raise e
                 else:
                     print(f'\nError: 文件：{source_path} 处理失败，请检查日志')
-            # 正确构建目标路径
-            target_path = Path(config.get_output_dir()).joinpath(source_path.name)
-            print(target_path)
-            container.save(target_path, quality=config.get_quality())
-            container.close()
+            
+            # 处理事件，确保UI响应
+            QApplication.processEvents()
+        
+        # 关闭进度对话框
+        progress.close()
+        
+        # 显示处理结果
+        message = f"处理完成！\n成功处理: {processed_count} 张图片"
+        if error_count > 0:
+            message += f"\n处理失败: {error_count} 张图片（请查看控制台日志）"
+        message += f"\n输出目录: {config.get_output_dir()}"
+        
+        QMessageBox.information(self, "处理完成", message)
         print(f"处理完成，文件已输出至 {config.get_output_dir()} 文件夹中")
-        #option = input('处理完成，文件已输出至 output 文件夹中，输入【r】返回主菜单，输入【x】退出程序\n')
-        # if DEBUG:
-        #     sys.exit(0)
-        # else:
-        #     if option == 'x' or option == 'X':
-        #         state = -1
-        #         # r 返回上一层
-        #     else:
-        #         state = 0
