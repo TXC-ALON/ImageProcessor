@@ -10,3 +10,4 @@ build
 dist
 logs
 /processor_config.json
+/config/processors/*.json
