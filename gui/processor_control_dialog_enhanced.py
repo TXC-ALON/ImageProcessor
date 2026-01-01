@@ -53,7 +53,7 @@ class ProcessorControlDialogEnhanced(QDialog):
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
         
-        desc_label = QLabel("左侧双击或拖拽Processor到右侧，右侧支持拖拽调整顺序")
+        desc_label = QLabel("左侧双击添加Processor到右侧，右侧支持拖拽调整顺序")
         desc_label.setStyleSheet("color: #666;")
         desc_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(desc_label)

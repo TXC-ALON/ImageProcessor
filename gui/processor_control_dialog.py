@@ -30,7 +30,7 @@ class ProcessorControlDialog(QDialog):
         
         # 标题和说明
         title_label = QLabel("配置Processor执行顺序")
-        title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        title_label.setStyleSheet("font-size: 30px; font-weight: bold;")
         layout.addWidget(title_label)
         
         desc_label = QLabel("左侧选择可用的Processor，右侧调整执行顺序")
