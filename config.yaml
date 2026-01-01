@@ -34,7 +34,7 @@ global:
     enable: true
     width: 3
 layout:
-  background_color: '#ffffff'
+  background_color: '#12c7db'
   elements:
     left_bottom:
       color: '#757575'
@@ -53,8 +53,8 @@ layout:
       color: '#212121'
       is_bold: true
       name: Param
-  logo_enable: false
-  logo_position: left
+  logo_enable: true
+  logo_position: right
   type: watermark_right_logo
 logo:
   default:

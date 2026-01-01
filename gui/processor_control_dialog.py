@@ -246,6 +246,13 @@ class ProcessorControlDialog(QDialog):
             config
         )
         from core.image_processor import CustomWatermarkProcessor
+        from core.configurable_watermark_processor import (
+            ConfigurableWatermarkProcessor,
+            create_dark_theme_processor,
+            create_light_theme_processor,
+            create_red_theme_processor,
+            create_blue_theme_processor
+        )
         
         # 创建映射字典
         processor_map = {
@@ -267,6 +274,12 @@ class ProcessorControlDialog(QDialog):
             'rounded_corner': ROUNDED_CORNER_PROCESSOR,
             'rounded_corner_blur': ROUNDED_CORNER_BLUR_PROCESSOR,
             'rounded_corner_blur_shadow': ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR,
+            # 新的可配置水印处理器
+            'configurable_watermark': ConfigurableWatermarkProcessor(config),
+            'dark_theme_watermark': create_dark_theme_processor(config, 'left'),
+            'light_theme_watermark': create_light_theme_processor(config, 'left'),
+            'red_theme_watermark': create_red_theme_processor(config, 'left'),
+            'blue_theme_watermark': create_blue_theme_processor(config, 'left'),
         }
         
         # 创建ProcessorChain

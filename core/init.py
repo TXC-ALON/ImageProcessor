@@ -21,6 +21,35 @@ from .image_processor import RoundedCornerProcessor
 from .image_processor import RoundedCornerBlurProcessor
 from .image_processor import RoundedCornerBlurShadowProcessor
 
+# 新的组件架构
+from .effects import (
+    RoundedCornerEffect,
+    ShadowEffect,
+    MarginEffect,
+    BackgroundBlurEffect,
+    BorderEffect,
+    CompositeEffect
+)
+from .watermark_effect import WatermarkEffect
+from .composite_processor import (
+    CompositeProcessor,
+    create_rounded_corner_blur_shadow_processor,
+    create_rounded_corner_blur_processor,
+    create_rounded_corner_processor,
+    create_background_blur_with_border_processor,
+    create_watermark_with_effects_processor
+)
+
+# 可配置的水印处理器
+from .configurable_watermark_processor import (
+    ConfigurableWatermarkProcessor,
+    CustomThemeWatermarkProcessor,
+    create_dark_theme_processor,
+    create_light_theme_processor,
+    create_red_theme_processor,
+    create_blue_theme_processor
+)
+
 # 读取配置
 config = Config('config.yaml')
 
@@ -75,5 +104,11 @@ LAYOUT_ITEMS = [
     LayoutItem.from_processor(BACKGROUND_BLUR_WITH_WHITE_BORDER_PROCESSOR),
     LayoutItem.from_processor(PURE_WHITE_MARGIN_PROCESSOR),
     LayoutItem.from_processor(CustomWatermarkProcessor(config)),
+    # 新的可配置水印处理器
+    LayoutItem.from_processor(ConfigurableWatermarkProcessor(config)),
+    LayoutItem.from_processor(create_dark_theme_processor(config, 'left')),
+    LayoutItem.from_processor(create_light_theme_processor(config, 'left')),
+    LayoutItem.from_processor(create_red_theme_processor(config, 'left')),
+    LayoutItem.from_processor(create_blue_theme_processor(config, 'left')),
 ]
 layout_items_dict = {item.value: item for item in LAYOUT_ITEMS}
