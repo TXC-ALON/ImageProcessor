@@ -96,6 +96,7 @@ class ImageTableModel(QAbstractTableModel):
         mapping = [
             img.path.name,
             img.path.suffix.upper(),
+            format_file_size(file_size),  # 文件大小列
             img.make,
             img.model,
             img.lens_model,
@@ -105,8 +106,8 @@ class ImageTableModel(QAbstractTableModel):
             img.exposure_time,
             f"{img.original_width}×{img.original_height} ({getattr(img, '_param_dict', {}).get('total_pixel', 'N/A')})",
             getattr(img, '_param_dict', {}).get('datetime', 'N/A'),
-            getattr(img, '_param_dict', {}).get('geo_info', 'N/A'),
-            format_file_size(file_size)  # 文件大小列
+            getattr(img, '_param_dict', {}).get('geo_info', 'N/A')
+
         ]
         return mapping[actual_col] if actual_col < len(mapping) else None
 
