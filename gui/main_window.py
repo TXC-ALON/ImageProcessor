@@ -165,7 +165,7 @@ class MainWindow(QMainWindow):
             'rounded_corner': '圆角效果',
             'shadow': '阴影',
             'margin': '边距',
-            'simple': '简洁',
+            'simple': '默认(简洁)',
             'square': '1:1填充',
             'padding_to_original_ratio': '填充到原始比例',
             'pure_white_margin': '白色边框',

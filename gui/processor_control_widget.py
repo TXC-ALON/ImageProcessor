@@ -101,26 +101,7 @@ class ProcessorControlWidget(QGroupBox):
             item = QListWidgetItem(item_text)
             item.setData(Qt.UserRole, layout_item.value)  # 存储LAYOUT_ID
             self.available_list.addItem(item)
-            
-        # 添加其他不在LAYOUT_ITEMS中的Processor
-        additional_processors = [
-            ("圆角,背景虚化,主图阴影 效果", "rounded_corner_blur_shadow"),
-            ("圆角加背景虚化效果", "rounded_corner_blur"),
-            ("圆角效果", "rounded_corner"),
-            ("阴影", "shadow"),
-            ("边距", "margin"),
-            ("简洁", "simple"),
-            ("1:1填充", "square"),
-            ("填充到原始比例", "padding_to_original_ratio"),
-            ("白色边框", "pure_white_margin"),
-        ]
-        
-        for name, layout_id in additional_processors:
-            item_text = f"{name} ({layout_id})"
-            item = QListWidgetItem(item_text)
-            item.setData(Qt.UserRole, layout_id)
-            self.available_list.addItem(item)
-    
+
     def add_selected_processors(self):
         """添加选中的Processor到已选列表"""
         selected_items = self.available_list.selectedItems()

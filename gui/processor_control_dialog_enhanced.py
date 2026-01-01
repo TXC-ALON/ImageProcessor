@@ -41,7 +41,7 @@ class ProcessorControlDialogEnhanced(QDialog):
         self.load_custom_processors()
         self.load_current_processors()
         self.setWindowTitle("Processor控制")
-        self.resize(1200, 800)
+        self.resize(1600, 1200)
         
     def setup_ui(self):
         """设置UI界面"""
@@ -53,7 +53,7 @@ class ProcessorControlDialogEnhanced(QDialog):
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
         
-        desc_label = QLabel("左侧选择可用的Processor，右侧调整执行顺序，支持创建自定义Processor和保存组合")
+        desc_label = QLabel("左侧双击或拖拽Processor到右侧，右侧支持拖拽调整顺序")
         desc_label.setStyleSheet("color: #666;")
         desc_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(desc_label)
@@ -65,58 +65,56 @@ class ProcessorControlDialogEnhanced(QDialog):
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         
-        # 默认Processor
-        default_group = QGroupBox("默认Processor")
-        default_layout = QVBoxLayout()
-        self.default_list = QListWidget()
-        self.default_list.setSelectionMode(QListWidget.MultiSelection)
-        default_layout.addWidget(self.default_list)
-        default_group.setLayout(default_layout)
+        # 新建Processor按钮（放在自定义Processor上面）
+        self.btn_create_new = QPushButton("+ 新建Processor")
+        left_layout.addWidget(self.btn_create_new)
         
         # 自定义Processor
         custom_group = QGroupBox("自定义Processor")
         custom_layout = QVBoxLayout()
         self.custom_list = QListWidget()
         self.custom_list.setSelectionMode(QListWidget.MultiSelection)
+        self.custom_list.setDragEnabled(True)  # 启用拖拽
         custom_layout.addWidget(self.custom_list)
         custom_group.setLayout(custom_layout)
         
+        # 默认Processor
+        default_group = QGroupBox("默认Processor")
+        default_layout = QVBoxLayout()
+        self.default_list = QListWidget()
+        self.default_list.setSelectionMode(QListWidget.MultiSelection)
+        self.default_list.setDragEnabled(True)  # 启用拖拽
+        default_layout.addWidget(self.default_list)
+        default_group.setLayout(default_layout)
+
         left_layout.addWidget(default_group)
         left_layout.addWidget(custom_group)
-        
-        # 中间：操作按钮
-        middle_widget = QWidget()
-        middle_layout = QVBoxLayout(middle_widget)
-        middle_layout.setAlignment(Qt.AlignCenter)
-        
-        self.btn_add = QPushButton("添加 →")
-        self.btn_remove = QPushButton("← 移除")
-        self.btn_move_up = QPushButton("上移")
-        self.btn_move_down = QPushButton("下移")
-        self.btn_clear = QPushButton("清空")
-        
-        self.btn_create_new = QPushButton("+ 新建Processor")
-        self.btn_save_composite = QPushButton("保存为组合")
-        
-        middle_layout.addWidget(self.btn_add)
-        middle_layout.addWidget(self.btn_remove)
-        middle_layout.addStretch()
-        middle_layout.addWidget(self.btn_move_up)
-        middle_layout.addWidget(self.btn_move_down)
-        middle_layout.addWidget(self.btn_clear)
-        middle_layout.addStretch()
-        middle_layout.addWidget(self.btn_create_new)
-        middle_layout.addWidget(self.btn_save_composite)
+
         
         # 右侧：已选Processor
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
+        
+        # 右侧操作按钮（放在selected_list上面）
+        right_buttons_layout = QHBoxLayout()
+        self.btn_remove = QPushButton("移除")
+        self.btn_clear = QPushButton("清空")
+        self.btn_save_composite = QPushButton("保存为组合")
+        
+        right_buttons_layout.addWidget(self.btn_remove)
+        right_buttons_layout.addWidget(self.btn_clear)
+        right_buttons_layout.addWidget(self.btn_save_composite)
+        right_buttons_layout.addStretch()
+        
+        right_layout.addLayout(right_buttons_layout)
         
         selected_group = QGroupBox("已选Processor（可拖拽调整顺序）")
         selected_layout = QVBoxLayout()
         self.selected_list = QListWidget()
         self.selected_list.setDragDropMode(QListWidget.InternalMove)
         self.selected_list.setSelectionMode(QListWidget.SingleSelection)
+        self.selected_list.setAcceptDrops(True)  # 接受拖拽
+        self.selected_list.setDropIndicatorShown(True)  # 显示拖拽指示器
         self.selected_list.model().rowsMoved.connect(self.on_selected_order_changed)
         selected_layout.addWidget(self.selected_list)
         selected_group.setLayout(selected_layout)
@@ -124,7 +122,6 @@ class ProcessorControlDialogEnhanced(QDialog):
         right_layout.addWidget(selected_group)
         
         lists_layout.addWidget(left_widget, 2)
-        lists_layout.addWidget(middle_widget, 1)
         lists_layout.addWidget(right_widget, 2)
         
         # 配置管理按钮
@@ -151,12 +148,9 @@ class ProcessorControlDialogEnhanced(QDialog):
         self.setLayout(layout)
         
         # 连接信号
-        self.btn_add.clicked.connect(self.add_selected_processors)
-        self.btn_remove.clicked.connect(self.remove_selected_processor)
-        self.btn_move_up.clicked.connect(self.move_processor_up)
-        self.btn_move_down.clicked.connect(self.move_processor_down)
-        self.btn_clear.clicked.connect(self.clear_selected_processors)
         self.btn_create_new.clicked.connect(self.create_new_processor)
+        self.btn_remove.clicked.connect(self.remove_selected_processor)
+        self.btn_clear.clicked.connect(self.clear_selected_processors)
         self.btn_save_composite.clicked.connect(self.save_as_composite)
         self.btn_save_config.clicked.connect(self.save_configuration)
         self.btn_load_config.clicked.connect(self.load_configuration)
@@ -164,6 +158,10 @@ class ProcessorControlDialogEnhanced(QDialog):
         self.btn_import_json.clicked.connect(self.import_json)
         self.btn_ok.clicked.connect(self.accept)
         self.btn_cancel.clicked.connect(self.reject)
+        
+        # 连接双击信号
+        self.default_list.itemDoubleClicked.connect(self.on_item_double_clicked)
+        self.custom_list.itemDoubleClicked.connect(self.on_item_double_clicked)
         
     def load_default_processors(self):
         """加载默认的可用Processor列表"""
@@ -183,7 +181,6 @@ class ProcessorControlDialogEnhanced(QDialog):
             ("圆角,背景虚化,主图阴影 效果", "rounded_corner_blur_shadow"),
             ("圆角加背景虚化效果", "rounded_corner_blur"),
             ("圆角效果", "rounded_corner"),
-            ("填充到原始比例", "padding_to_original_ratio"),
         ]
         
         # 添加additional_processors，但跳过已经在LAYOUT_ITEMS中的
@@ -200,7 +197,7 @@ class ProcessorControlDialogEnhanced(QDialog):
             self.default_list.addItem(item)
         
         # 按名称排序，方便查找
-        self.default_list.sortItems()
+        # self.default_list.sortItems()
     
     def load_custom_processors(self):
         """加载自定义Processor"""
@@ -287,18 +284,10 @@ class ProcessorControlDialogEnhanced(QDialog):
         
         self.update_selected_processors()
     
-    def add_selected_processors(self):
-        """添加选中的Processor到已选列表"""
-        # 从默认列表添加
-        selected_default_items = self.default_list.selectedItems()
-        for item in selected_default_items:
-            self.add_processor_item(item, "default")
-        
-        # 从自定义列表添加
-        selected_custom_items = self.custom_list.selectedItems()
-        for item in selected_custom_items:
-            self.add_processor_item(item, "custom")
-        
+    def on_item_double_clicked(self, item):
+        """处理双击事件：将双击的Processor添加到已选列表"""
+        source_type = item.data(Qt.UserRole + 1)
+        self.add_processor_item(item, source_type)
         self.update_selected_processors()
     
     def add_processor_item(self, source_item, source_type):
@@ -321,24 +310,6 @@ class ProcessorControlDialogEnhanced(QDialog):
         current_row = self.selected_list.currentRow()
         if current_row >= 0:
             self.selected_list.takeItem(current_row)
-            self.update_selected_processors()
-    
-    def move_processor_up(self):
-        """将选中的Processor上移"""
-        current_row = self.selected_list.currentRow()
-        if current_row > 0:
-            item = self.selected_list.takeItem(current_row)
-            self.selected_list.insertItem(current_row - 1, item)
-            self.selected_list.setCurrentRow(current_row - 1)
-            self.update_selected_processors()
-    
-    def move_processor_down(self):
-        """将选中的Processor下移"""
-        current_row = self.selected_list.currentRow()
-        if current_row >= 0 and current_row < self.selected_list.count() - 1:
-            item = self.selected_list.takeItem(current_row)
-            self.selected_list.insertItem(current_row + 1, item)
-            self.selected_list.setCurrentRow(current_row + 1)
             self.update_selected_processors()
     
     def clear_selected_processors(self):

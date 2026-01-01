@@ -91,24 +91,27 @@ class LayoutItem(object):
         return LayoutItem(processor.LAYOUT_NAME, processor.LAYOUT_ID, processor)
 
 LAYOUT_ITEMS = [
+    LayoutItem.from_processor(SIMPLE_PROCESSOR),
     LayoutItem.from_processor(SHADOW_PROCESSOR),
     LayoutItem.from_processor(MARGIN_PROCESSOR),
-    LayoutItem.from_processor(SIMPLE_PROCESSOR),
+
+    LayoutItem.from_processor(SQUARE_PROCESSOR),
+    LayoutItem.from_processor(PADDING_TO_ORIGINAL_RATIO_PROCESSOR),
+
+    LayoutItem.from_processor(BACKGROUND_BLUR_PROCESSOR),
+    LayoutItem.from_processor(BACKGROUND_BLUR_WITH_WHITE_BORDER_PROCESSOR),
+    LayoutItem.from_processor(PURE_WHITE_MARGIN_PROCESSOR),
+
+
+    LayoutItem.from_processor(ROUNDED_CORNER_PROCESSOR),
+    LayoutItem.from_processor(ROUNDED_CORNER_BLUR_PROCESSOR),
+    LayoutItem.from_processor(ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR),
+
+    # 水印处理器
     LayoutItem.from_processor(WATERMARK_LEFT_LOGO_PROCESSOR),
     LayoutItem.from_processor(WATERMARK_RIGHT_LOGO_PROCESSOR),
     LayoutItem.from_processor(DARK_WATERMARK_LEFT_LOGO_PROCESSOR),
     LayoutItem.from_processor(DARK_WATERMARK_RIGHT_LOGO_PROCESSOR),
-    LayoutItem.from_processor(SQUARE_PROCESSOR),
-    LayoutItem.from_processor(PADDING_TO_ORIGINAL_RATIO_PROCESSOR),
-    LayoutItem.from_processor(BACKGROUND_BLUR_PROCESSOR),
-    LayoutItem.from_processor(BACKGROUND_BLUR_WITH_WHITE_BORDER_PROCESSOR),
-    LayoutItem.from_processor(PURE_WHITE_MARGIN_PROCESSOR),
-    LayoutItem.from_processor(CustomWatermarkProcessor(config)),
-    # 新的可配置水印处理器
-    LayoutItem.from_processor(ConfigurableWatermarkProcessor(config)),
-    LayoutItem.from_processor(create_dark_theme_processor(config, 'left')),
-    LayoutItem.from_processor(create_light_theme_processor(config, 'left')),
-    LayoutItem.from_processor(create_red_theme_processor(config, 'left')),
-    LayoutItem.from_processor(create_blue_theme_processor(config, 'left')),
+
 ]
 layout_items_dict = {item.value: item for item in LAYOUT_ITEMS}
