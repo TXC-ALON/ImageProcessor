@@ -6,7 +6,7 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QWidget, QMessageBox, QInputDialog, QLabel, QGroupBox,
-    QFileDialog
+    QFileDialog, QMenu
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from core.init import LAYOUT_ITEMS, config
@@ -73,8 +73,9 @@ class ProcessorControlDialogEnhanced(QDialog):
         custom_group = QGroupBox("自定义Processor")
         custom_layout = QVBoxLayout()
         self.custom_list = QListWidget()
-        self.custom_list.setSelectionMode(QListWidget.MultiSelection)
+        self.custom_list.setSelectionMode(QListWidget.ExtendedSelection)  # 改为ExtendedSelection，支持Ctrl键多选
         self.custom_list.setDragEnabled(True)  # 启用拖拽
+        self.custom_list.setDragDropMode(QListWidget.DragOnly)  # 只允许拖出
         custom_layout.addWidget(self.custom_list)
         custom_group.setLayout(custom_layout)
         
@@ -82,8 +83,9 @@ class ProcessorControlDialogEnhanced(QDialog):
         default_group = QGroupBox("默认Processor")
         default_layout = QVBoxLayout()
         self.default_list = QListWidget()
-        self.default_list.setSelectionMode(QListWidget.MultiSelection)
+        self.default_list.setSelectionMode(QListWidget.ExtendedSelection)  # 改为ExtendedSelection，支持Ctrl键多选
         self.default_list.setDragEnabled(True)  # 启用拖拽
+        self.default_list.setDragDropMode(QListWidget.DragOnly)  # 只允许拖出
         default_layout.addWidget(self.default_list)
         default_group.setLayout(default_layout)
 
@@ -162,6 +164,9 @@ class ProcessorControlDialogEnhanced(QDialog):
         # 连接双击信号
         self.default_list.itemDoubleClicked.connect(self.on_item_double_clicked)
         self.custom_list.itemDoubleClicked.connect(self.on_item_double_clicked)
+        
+        # 添加上下文菜单
+        self.setup_context_menus()
         
     def load_default_processors(self):
         """加载默认的可用Processor列表"""
@@ -740,3 +745,45 @@ class ProcessorControlDialogEnhanced(QDialog):
             
         except Exception as e:
             QMessageBox.critical(self, "错误", f"保存组合Processor失败: {str(e)}")
+    
+    def setup_context_menus(self):
+        """设置上下文菜单"""
+        # 为默认列表添加上下文菜单
+        self.default_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.default_list.customContextMenuRequested.connect(self.show_default_list_context_menu)
+        
+        # 为自定义列表添加上下文菜单
+        self.custom_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.custom_list.customContextMenuRequested.connect(self.show_custom_list_context_menu)
+    
+    def show_default_list_context_menu(self, position):
+        """显示默认列表的上下文菜单"""
+        menu = QMenu(self)
+        add_action = menu.addAction("添加到右侧")
+        add_action.triggered.connect(lambda: self.add_selected_from_list(self.default_list))
+        menu.exec_(self.default_list.mapToGlobal(position))
+    
+    def show_custom_list_context_menu(self, position):
+        """显示自定义列表的上下文菜单"""
+        menu = QMenu(self)
+        add_action = menu.addAction("添加到右侧")
+        add_action.triggered.connect(lambda: self.add_selected_from_list(self.custom_list))
+        menu.exec_(self.custom_list.mapToGlobal(position))
+    
+    def add_selected_from_list(self, source_list):
+        """从指定列表添加选中的Processor到右侧列表"""
+        selected_items = source_list.selectedItems()
+        if not selected_items:
+            QMessageBox.information(self, "提示", "请先选择要添加的Processor")
+            return
+        
+        added_count = 0
+        for item in selected_items:
+            source_type = item.data(Qt.UserRole + 1)
+            self.add_processor_item(item, source_type)
+            added_count += 1
+        
+        self.update_selected_processors()
+        
+        if added_count > 0:
+            print(f"成功添加 {added_count} 个Processor到右侧列表")
