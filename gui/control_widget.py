@@ -28,6 +28,12 @@ def create_image_control_group(parent=None):
     #le_output_path.setPlaceholderText("输出目录路径")
     btn_browse_path = QPushButton("输出目录:")
     le_output_path.setText(config.get_output_dir())
+    
+    # 设置初始tooltip
+    le_output_path.setToolTip(config.get_output_dir())
+    
+    # 连接textChanged信号，当用户手动编辑路径时更新tooltip
+    le_output_path.textChanged.connect(lambda text: le_output_path.setToolTip(text))
 
     # 在创建QAction之前添加路径检查
     icon_path = r"G:\Dev\PhotoYin\ImageProcesser\resources\icons\FilePicker.png"
@@ -129,6 +135,8 @@ def browse_output_path(path_line_edit):
     if folder:
         path_line_edit.setText(folder)
         config.set_output_dir(folder)
+        # 更新tooltip
+        path_line_edit.setToolTip(folder)
 
 
 import os
