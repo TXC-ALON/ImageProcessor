@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QLineEdit,
 from PyQt5.QtCore import Qt
 from .image_table_model import ImageTableModel,create_control_buttons
 from .control_widget import create_image_control_group, create_video_control_group
-from .processor_control_dialog import ProcessorControlDialog
+from .processor_control_dialog_enhanced import ProcessorControlDialogEnhanced as ProcessorControlDialog
 
 from core.image_container import ImageContainer
 from core.image_processor import ProcessorChain
@@ -506,7 +506,6 @@ class MainWindow(QMainWindow):
         # 使用用户选择的Processor链
         if self.selected_processors:
             # 创建临时对话框来获取Processor链
-            from .processor_control_dialog import ProcessorControlDialog
             temp_dialog = ProcessorControlDialog(self, self.selected_processors)
             processor_chain = temp_dialog.get_processor_chain()
         else:
