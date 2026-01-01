@@ -4,7 +4,7 @@ from typing import List
 from PyQt5.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QLineEdit,
                              QComboBox, QCheckBox, QHBoxLayout, QWidget, QFileDialog, QMessageBox,
                              QStatusBar, QSplitter, QTableView, QAbstractItemView, QProgressDialog,
-                             QApplication, QMenu, QAction, QLabel, QTextEdit, QGroupBox)
+                             QApplication, QMenu, QAction, QLabel, QTextEdit, QGroupBox, QDialog)
 from PyQt5.QtCore import Qt
 from .image_table_model import ImageTableModel,create_control_buttons
 from .control_widget import create_image_control_group, create_video_control_group
