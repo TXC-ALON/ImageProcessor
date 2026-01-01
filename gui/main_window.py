@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QLineEdit,
                              QComboBox, QCheckBox, QHBoxLayout, QWidget, QFileDialog, QMessageBox,
                              QStatusBar, QSplitter, QTableView, QAbstractItemView, QProgressDialog,
                              QApplication, QMenu, QAction, QLabel, QTextEdit, QGroupBox, QDialog)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 from .image_table_model import ImageTableModel,create_control_buttons
 from .control_widget import create_image_control_group, create_video_control_group
 from .processor_control_dialog_enhanced import ProcessorControlDialogEnhanced as ProcessorControlDialog
@@ -18,6 +19,53 @@ from core.init import config
 
 from config.constant import DEBUG
 from tqdm import tqdm
+
+
+class DragDropTableView(QTableView):
+    """支持拖拽文件的表格视图"""
+    
+    # 信号：当文件被拖拽到表格时发出
+    files_dropped = pyqtSignal(list)
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QAbstractItemView.DropOnly)
+    
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """处理拖拽进入事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def dragMoveEvent(self, event):
+        """处理拖拽移动事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def dropEvent(self, event: QDropEvent):
+        """处理拖拽释放事件"""
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            file_paths = []
+            
+            for url in urls:
+                # 获取本地文件路径
+                file_path = url.toLocalFile()
+                if file_path:
+                    file_paths.append(file_path)
+            
+            if file_paths:
+                # 发出信号，传递文件路径列表
+                self.files_dropped.emit(file_paths)
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            event.ignore()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -209,7 +257,8 @@ class MainWindow(QMainWindow):
 
     def create_table_view(self):
         """创建并设置表格视图"""
-        table_view = QTableView()
+        # 创建自定义表格视图以支持文件拖拽
+        table_view = DragDropTableView()
         self.model = ImageTableModel(self.image_containers)
         table_view.setModel(self.model)
 
@@ -226,6 +275,9 @@ class MainWindow(QMainWindow):
         # 启用右键菜单
         table_view.setContextMenuPolicy(Qt.CustomContextMenu)
         table_view.customContextMenuRequested.connect(self.show_table_context_menu)
+        
+        # 连接拖拽完成信号
+        table_view.files_dropped.connect(self.on_files_dropped)
 
         return table_view
 
@@ -271,6 +323,40 @@ class MainWindow(QMainWindow):
 
         self.load_images_from_paths(paths, append=True)
 
+    def on_files_dropped(self, file_paths):
+        """处理拖拽文件事件"""
+        if not file_paths:
+            return
+        
+        # 收集所有图片文件路径
+        all_image_paths = []
+        image_extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif', '.webp'}
+        
+        for file_path in file_paths:
+            path = Path(file_path)
+            
+            if path.is_file():
+                # 如果是文件，检查是否是图片
+                if path.suffix.lower() in image_extensions:
+                    all_image_paths.append(str(path))
+            elif path.is_dir():
+                # 如果是文件夹，只导入当前层次的图片文件（不递归）
+                for item in path.iterdir():
+                    if item.is_file() and item.suffix.lower() in image_extensions:
+                        all_image_paths.append(str(item))
+        
+        if not all_image_paths:
+            QMessageBox.information(self, "提示", "拖拽的文件或文件夹中没有找到支持的图片文件。")
+            return
+        
+        # 加载图片（追加模式）
+        self.load_images_from_paths(all_image_paths, append=True)
+        
+        # 更新上次打开的文件夹路径（使用第一个文件的父目录）
+        if all_image_paths:
+            first_file_path = Path(all_image_paths[0])
+            config.set_last_opened_dir(str(first_file_path.parent))
+    
     def on_clear_table(self):
         """清空表格和数据"""
         reply = QMessageBox.question(
