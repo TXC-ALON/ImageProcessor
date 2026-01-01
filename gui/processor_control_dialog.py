@@ -112,31 +112,37 @@ class ProcessorControlDialog(QDialog):
         """加载默认的可用Processor列表"""
         self.available_list.clear()
         
+        # 收集所有Processor，避免重复
+        all_processors = {}
+        
         # 从LAYOUT_ITEMS中获取所有可用的Processor
         for layout_item in LAYOUT_ITEMS:
-            item_text = f"{layout_item.name} ({layout_item.value})"
-            item = QListWidgetItem(item_text)
-            item.setData(Qt.UserRole, layout_item.value)  # 存储LAYOUT_ID
-            self.available_list.addItem(item)
-            
+            layout_id = layout_item.value
+            display_name = layout_item.name
+            all_processors[layout_id] = display_name
+        
         # 添加其他不在LAYOUT_ITEMS中的Processor
         additional_processors = [
             ("圆角,背景虚化,主图阴影 效果", "rounded_corner_blur_shadow"),
             ("圆角加背景虚化效果", "rounded_corner_blur"),
             ("圆角效果", "rounded_corner"),
-            ("阴影", "shadow"),
-            ("边距", "margin"),
-            ("简洁", "simple"),
-            ("1:1填充", "square"),
             ("填充到原始比例", "padding_to_original_ratio"),
-            ("白色边框", "pure_white_margin"),
         ]
         
+        # 添加additional_processors，但跳过已经在LAYOUT_ITEMS中的
         for name, layout_id in additional_processors:
-            item_text = f"{name} ({layout_id})"
+            if layout_id not in all_processors:
+                all_processors[layout_id] = name
+        
+        # 现在添加所有唯一的Processor到列表
+        for layout_id, display_name in all_processors.items():
+            item_text = f"{display_name} ({layout_id})"
             item = QListWidgetItem(item_text)
             item.setData(Qt.UserRole, layout_id)
             self.available_list.addItem(item)
+        
+        # 按名称排序，方便查找
+        self.available_list.sortItems()
     
     def load_current_processors(self):
         """加载当前已选的Processor"""

@@ -61,6 +61,7 @@ class ProcessorChain(ProcessorComponent):
 
 class EmptyProcessor(ProcessorComponent):
     LAYOUT_ID = 'empty'
+    LAYOUT_NAME = '空处理器'
 
     def process(self, container: ImageContainer) -> None:
         pass
@@ -68,6 +69,7 @@ class EmptyProcessor(ProcessorComponent):
 
 class ShadowProcessor(ProcessorComponent):
     LAYOUT_ID = 'shadow'
+    LAYOUT_NAME = '阴影'
 
     def process(self, container: ImageContainer) -> None:
         # 加载图像
@@ -89,6 +91,7 @@ class ShadowProcessor(ProcessorComponent):
 
 class MarginProcessor(ProcessorComponent):
     LAYOUT_ID = 'margin'
+    LAYOUT_NAME = '边距'
 
     def process(self, container: ImageContainer) -> None:
         config = self.config
@@ -531,5 +534,3 @@ class RoundedCornerBlurShadowProcessor(ProcessorComponent):
         background.paste(rounded_image, (offset_img_x, offset_img_y), mask=rounded_image.split()[3])
         background_jpg= background.convert("RGB")
         container.update_watermark_img(background_jpg)
-
-
