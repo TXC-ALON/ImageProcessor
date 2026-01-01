@@ -13,6 +13,7 @@ def create_image_control_group(parent=None):
 
     le_image_prefix = QLineEdit("Img_")
     le_image_suffix = QLineEdit("")
+    le_image_suffix.setPlaceholderText("默认为时间戳")  # 添加placeholder提示
     cb_image_format = QComboBox()
     cb_image_format.addItems(["JPG", "PNG", "TIFF", "WEBP"])
     
