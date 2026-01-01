@@ -4,7 +4,7 @@ from typing import List
 from PyQt5.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QLineEdit,
                              QComboBox, QCheckBox, QHBoxLayout, QWidget, QFileDialog, QMessageBox,
                              QStatusBar, QSplitter, QTableView, QAbstractItemView, QProgressDialog,
-                             QApplication, QMenu, QAction, QLabel, QTextEdit, QGroupBox, QDialog)
+                             QApplication, QMenu, QAction,QListWidgetItem,QLabel, QTextEdit, QGroupBox, QDialog, QHeaderView)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 from .image_table_model import ImageTableModel,create_control_buttons
@@ -249,8 +249,8 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(btn_clear)
         button_layout.addStretch()
 
-        right_layout.addWidget(self.table_view)
         right_layout.addLayout(button_layout)
+        right_layout.addWidget(self.table_view)
         right_panel.setLayout(right_layout)
 
         return right_panel
@@ -268,6 +268,12 @@ class MainWindow(QMainWindow):
         table_view.setAcceptDrops(True)
         table_view.setDropIndicatorShown(True)
         table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        
+        # 启用列拖动调整顺序
+        table_view.horizontalHeader().setSectionsMovable(True)
+        table_view.horizontalHeader().setDragEnabled(True)
+        table_view.horizontalHeader().setDragDropMode(QHeaderView.InternalMove)
+        table_view.horizontalHeader().sectionMoved.connect(self.on_column_order_changed)
 
         # 连接顺序改变信号
         self.model.order_changed.connect(self.on_order_changed)
@@ -370,9 +376,44 @@ class MainWindow(QMainWindow):
             self.table_view.setModel(self.model)
             self.statusBar().showMessage("表格已清空", 1500)
 
+    def on_column_order_changed(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        """处理列顺序改变事件"""
+        #print(f"列顺序改变: {logicalIndex} 从 {oldVisualIndex} 移动到 {newVisualIndex}")
+        # 保存列顺序到配置
+        self.save_column_order()
+    
+    def save_column_order(self):
+        """保存当前列顺序到配置"""
+        if not hasattr(self, 'table_view') or not self.table_view:
+            return
+        
+        # 获取当前可见的列顺序
+        header = self.table_view.horizontalHeader()
+        column_count = header.count()
+        
+        # 获取逻辑索引到可视索引的映射
+        logical_to_visual = {}
+        for logical in range(column_count):
+            visual = header.visualIndex(logical)
+            logical_to_visual[logical] = visual
+        
+        # 按可视顺序获取列名
+        visible_columns = []
+        for visual in range(column_count):
+            for logical, v in logical_to_visual.items():
+                if v == visual:
+                    # 获取列名
+                    column_name = self.model.headers[logical] if logical < len(self.model.headers) else f"列{logical}"
+                    visible_columns.append(column_name)
+                    break
+        
+        # 保存到配置
+        config.set_table_visible_columns(visible_columns)
+        #print(f"列顺序已保存: {visible_columns}")
+    
     def on_order_changed(self):
         """处理顺序改变事件"""
-        print("当前图片顺序（拖拽后）:")
+        #print("当前图片顺序（拖拽后）:")
         self.print_current_order()
         self.table_view.clearSelection()
 
@@ -751,7 +792,7 @@ class MainWindow(QMainWindow):
         help_menu.addAction(about_action)
 
     def open_table_columns_dialog(self):
-        """打开表格列设置对话框"""
+        """打开表格列设置对话框（支持拖动调整顺序）"""
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QLabel
         
         dialog = QDialog(self)
@@ -761,28 +802,51 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         
         # 说明标签
-        label = QLabel("选择要在表格中显示的列（勾选表示显示）：")
+        label = QLabel("选择要在表格中显示的列（勾选表示显示，拖动调整顺序，文件名必须选中）：")
         layout.addWidget(label)
         
-        # 列选择列表
+        # 列选择列表（支持拖拽调整顺序）
         list_widget = QListWidget()
-        list_widget.setSelectionMode(QListWidget.NoSelection)
+        list_widget.setSelectionMode(QListWidget.SingleSelection)
+        list_widget.setDragDropMode(QListWidget.InternalMove)
+        list_widget.setDragEnabled(True)
+        list_widget.setAcceptDrops(True)
+        list_widget.setDropIndicatorShown(True)
         
-        # 获取所有可用的列
+        # 获取所有可用的列（包括新增的文件大小列）
         all_headers = [
-            "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
+            "文件名", "后缀名", "文件大小", "相机品牌", "相机型号", "镜头型号",
             "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
         ]
         
-        # 获取当前可见的列
+        # 获取当前可见的列（保持当前顺序）
         visible_columns = config.get_table_visible_columns()
         
-        # 添加所有列到列表，并设置勾选状态
+        # 首先添加当前可见的列（保持当前顺序）
+        for header in visible_columns:
+            if header in all_headers:
+                item = QListWidgetItem(header)
+                # 文件名列必须选中且不可取消，显示为灰色的选中效果
+                if header == "文件名":
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled)
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled)
+                    item.setCheckState(Qt.Checked)
+                list_widget.addItem(item)
+        
+        # 然后添加未选中的列
         for header in all_headers:
-            item = QListWidgetItem(header)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked if header in visible_columns else Qt.Unchecked)
-            list_widget.addItem(item)
+            if header not in visible_columns:
+                item = QListWidgetItem(header)
+                # 文件名列必须选中且不可取消，显示为灰色的选中效果
+                if header == "文件名":
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled)
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled)
+                    item.setCheckState(Qt.Unchecked)
+                list_widget.addItem(item)
         
         layout.addWidget(list_widget)
         
@@ -798,6 +862,11 @@ class MainWindow(QMainWindow):
         select_none_btn = QPushButton("全不选")
         select_none_btn.clicked.connect(lambda: self.set_all_items_checkstate(list_widget, Qt.Unchecked))
         button_layout.addWidget(select_none_btn)
+        
+        # 重置顺序按钮
+        reset_order_btn = QPushButton("重置顺序")
+        reset_order_btn.clicked.connect(lambda: self.reset_column_order(list_widget, all_headers))
+        button_layout.addWidget(reset_order_btn)
         
         button_layout.addStretch()
         
@@ -815,28 +884,105 @@ class MainWindow(QMainWindow):
         dialog.setLayout(layout)
         
         if dialog.exec_() == QDialog.Accepted:
-            # 获取选中的列
+            # 获取选中的列（按列表中的顺序）
             selected_columns = []
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
                 if item.checkState() == Qt.Checked:
                     selected_columns.append(item.text())
             
-            # 保存设置
+            # 确保文件名在选中列中（即使由于某些原因不在）
+            if "文件名" not in selected_columns:
+                selected_columns.append("文件名")
+                print("警告：文件名列未选中，已自动添加")
+            
+            # 保存设置（包括顺序）
             config.set_table_visible_columns(selected_columns)
             
             # 更新表格模型
             if hasattr(self, 'model'):
                 self.model.update_visible_headers()
                 self.model.layoutChanged.emit()
+                # 重新应用列顺序到表格
+                self.apply_column_order_to_table(selected_columns)
             
             self.statusBar().showMessage("表格列设置已更新", 2000)
+            print(f"列设置已更新: {selected_columns}")
+    
+    def reset_column_order(self, list_widget, all_headers):
+        """重置列顺序为默认顺序（并恢复默认配置）"""
+        try:
+            # 定义默认可见列（所有列都可见）
+            default_visible = [
+                "文件名", "后缀名", "文件大小", "相机品牌", "相机型号", "镜头型号",
+                "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
+            ]
+            
+            # 清空列表
+            list_widget.clear()
+            
+            # 按默认顺序重新添加所有列，并设置为默认勾选状态
+            for header in all_headers:
+                item = QListWidgetItem(header)
+                # 文件名列必须选中且不可取消，显示为灰色的选中效果
+                if header == "文件名":
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled)
+                    item.setCheckState(Qt.Checked)
+                else:
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable | Qt.ItemIsDragEnabled | Qt.ItemIsEnabled)
+                    # 所有列默认都勾选
+                    item.setCheckState(Qt.Checked)
+                list_widget.addItem(item)
+            
+            # 更新配置为默认状态
+            config.set_table_visible_columns(default_visible)
+            
+            # 更新表格模型
+            if hasattr(self, 'model'):
+                self.model.update_visible_headers()
+                self.model.layoutChanged.emit()
+                # 重新应用列顺序到表格
+                self.apply_column_order_to_table(default_visible)
+            
+            print("列顺序已重置为默认顺序，配置已更新为默认状态")
+            print(f"默认可见列: {default_visible}")
+        except Exception as e:
+            print(f"重置列顺序时出错: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def apply_column_order_to_table(self, column_order):
+        """将列顺序应用到表格"""
+        if not hasattr(self, 'table_view') or not self.table_view:
+            return
+        
+        # 获取当前表格的列顺序
+        header = self.table_view.horizontalHeader()
+        
+        # 创建列名到逻辑索引的映射
+        column_name_to_index = {}
+        for i in range(len(self.model.headers)):
+            column_name_to_index[self.model.headers[i]] = i
+        
+        # 重新排列列顺序
+        for visual_index, column_name in enumerate(column_order):
+            if column_name in column_name_to_index:
+                logical_index = column_name_to_index[column_name]
+                current_visual_index = header.visualIndex(logical_index)
+                if current_visual_index != visual_index:
+                    header.moveSection(current_visual_index, visual_index)
+        
+        print(f"已应用列顺序到表格: {column_order}")
 
     def set_all_items_checkstate(self, list_widget, state):
         """设置列表中所有项目的勾选状态"""
         for i in range(list_widget.count()):
             item = list_widget.item(i)
-            item.setCheckState(state)
+            # 文件名列必须始终被选中
+            if item.text() == "文件名":
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(state)
 
     def show_about_dialog(self):
         """显示关于对话框"""

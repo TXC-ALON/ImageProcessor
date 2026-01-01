@@ -24,17 +24,23 @@ global:
   table_columns:
     visible_columns:
     - "\u6587\u4EF6\u540D"
+    - "\u540E\u7F00\u540D"
+    - "\u6587\u4EF6\u5927\u5C0F"
     - "\u76F8\u673A\u54C1\u724C"
     - "\u76F8\u673A\u578B\u53F7"
     - "\u955C\u5934\u578B\u53F7"
     - "\u7126\u8DDD"
     - "\u5149\u5708"
     - ISO
+    - "\u66DD\u5149\u65F6\u95F4"
+    - "\u5206\u8FA8\u7387"
+    - "\u62CD\u6444\u65F6\u95F4"
+    - "GPS\u4FE1\u606F"
   white_margin:
     enable: true
     width: 3
 layout:
-  background_color: '#12c7db'
+  background_color: '#4b65db'
   elements:
     left_bottom:
       color: '#757575'

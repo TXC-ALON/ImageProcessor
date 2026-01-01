@@ -278,9 +278,9 @@ class Config(object):
         """获取表格可见列配置"""
         if 'table_columns' in self._data['global'] and 'visible_columns' in self._data['global']['table_columns']:
             return self._data['global']['table_columns']['visible_columns']
-        # 默认返回所有列
+        # 默认返回所有列（包括新增的文件大小列）
         return [
-            "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
+            "文件名", "后缀名", "文件大小", "相机品牌", "相机型号", "镜头型号",
             "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
         ]
 

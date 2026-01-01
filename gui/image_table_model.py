@@ -1,12 +1,32 @@
 from PyQt5.QtCore import QAbstractTableModel, Qt, QByteArray, QDataStream, QIODevice, pyqtSignal
 from PyQt5.QtCore import QMimeData
 from typing import List
+import os
 from core.image_container import ImageContainer
 from PyQt5.QtWidgets import (QPushButton, QTableView, QAbstractItemView,
                              QGroupBox, QFormLayout, QLineEdit, QComboBox,
                              QCheckBox, QHBoxLayout, QWidget, QVBoxLayout)
 
 from core.init import config
+
+
+def format_file_size(size_bytes):
+    """格式化文件大小，返回Mb或Kb单位"""
+    if size_bytes is None:
+        return "N/A"
+    
+    try:
+        size_bytes = float(size_bytes)
+        if size_bytes >= 1024 * 1024:  # 大于等于1MB
+            size_mb = size_bytes / (1024 * 1024)
+            return f"{size_mb:.2f} MB"
+        elif size_bytes >= 1024:  # 大于等于1KB
+            size_kb = size_bytes / 1024
+            return f"{size_kb:.2f} KB"
+        else:  # 小于1KB
+            return f"{size_bytes:.0f} B"
+    except (ValueError, TypeError):
+        return "N/A"
 
 class ImageTableModel(QAbstractTableModel):
     order_changed = pyqtSignal()
@@ -15,7 +35,7 @@ class ImageTableModel(QAbstractTableModel):
         super().__init__()
         self.images = images
         self.all_headers = [
-            "文件名", "后缀名", "相机品牌", "相机型号", "镜头型号",
+            "文件名", "后缀名", "文件大小", "相机品牌", "相机型号", "镜头型号",
             "焦距", "光圈", "ISO", "曝光时间", "分辨率", "拍摄时间", "GPS信息"
         ]
         self.update_visible_headers()
@@ -26,10 +46,13 @@ class ImageTableModel(QAbstractTableModel):
         self.headers = []
         self.column_mapping = []  # 存储可见列在all_headers中的索引
         
-        for i, header in enumerate(self.all_headers):
-            if header in visible_columns:
+        # 按照visible_columns中的顺序来构建headers
+        for header in visible_columns:
+            if header in self.all_headers:
                 self.headers.append(header)
-                self.column_mapping.append(i)
+                # 找到该header在all_headers中的索引
+                index = self.all_headers.index(header)
+                self.column_mapping.append(index)
         
         # 如果配置为空，显示所有列
         if not self.headers:
@@ -62,6 +85,14 @@ class ImageTableModel(QAbstractTableModel):
         else:
             return None
 
+        # 获取文件大小
+        file_size = None
+        try:
+            if img.path.exists():
+                file_size = os.path.getsize(img.path)
+        except (OSError, AttributeError):
+            file_size = None
+        
         mapping = [
             img.path.name,
             img.path.suffix.upper(),
@@ -74,7 +105,8 @@ class ImageTableModel(QAbstractTableModel):
             img.exposure_time,
             f"{img.original_width}×{img.original_height} ({getattr(img, '_param_dict', {}).get('total_pixel', 'N/A')})",
             getattr(img, '_param_dict', {}).get('datetime', 'N/A'),
-            getattr(img, '_param_dict', {}).get('geo_info', 'N/A')
+            getattr(img, '_param_dict', {}).get('geo_info', 'N/A'),
+            format_file_size(file_size)  # 文件大小列
         ]
         return mapping[actual_col] if actual_col < len(mapping) else None
 
