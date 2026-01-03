@@ -290,3 +290,73 @@ class Config(object):
             self._data['global']['table_columns'] = {}
         self._data['global']['table_columns']['visible_columns'] = visible_columns
         self.save()
+        
+    def get_output_settings(self):
+        """获取输出设置"""
+        if 'output_settings' not in self._data:
+            # 返回默认输出设置
+            return {
+                'prefix': 'Img_',
+                'suffix': '',
+                'format': 'JPG',
+                'quality': 95,
+                'force_size': False,
+                'output_width': 1920,
+                'output_height': 1080,
+                'output_path': self.get_output_dir()
+            }
+        
+        # 确保所有必要的键都存在
+        settings = self._data['output_settings']
+        defaults = {
+            'prefix': 'Img_',
+            'suffix': '',
+            'format': 'JPG',
+            'quality': 95,
+            'force_size': False,
+            'output_width': 1920,
+            'output_height': 1080,
+            'output_path': self.get_output_dir()
+        }
+        
+        # 合并默认值和保存的值
+        for key, default_value in defaults.items():
+            if key not in settings:
+                settings[key] = default_value
+        
+        return settings
+    
+    def set_output_settings(self, settings):
+        """设置输出设置"""
+        # 确保所有必要的键都存在
+        required_keys = ['prefix', 'suffix', 'format', 'quality', 'force_size', 
+                        'output_width', 'output_height', 'output_path']
+        
+        for key in required_keys:
+            if key not in settings:
+                # 使用默认值
+                if key == 'prefix':
+                    settings[key] = 'Img_'
+                elif key == 'suffix':
+                    settings[key] = ''
+                elif key == 'format':
+                    settings[key] = 'JPG'
+                elif key == 'quality':
+                    settings[key] = 95
+                elif key == 'force_size':
+                    settings[key] = False
+                elif key == 'output_width':
+                    settings[key] = 1920
+                elif key == 'output_height':
+                    settings[key] = 1080
+                elif key == 'output_path':
+                    settings[key] = self.get_output_dir()
+        
+        self._data['output_settings'] = settings
+        self.save()
+        
+    def update_output_settings(self, **kwargs):
+        """更新输出设置（部分更新）"""
+        current_settings = self.get_output_settings()
+        current_settings.update(kwargs)
+        self.set_output_settings(current_settings)

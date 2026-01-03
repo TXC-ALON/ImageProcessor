@@ -503,11 +503,26 @@ class MainWindow(QMainWindow):
 
         # 打印图片控制参数
         print("\n📷 图片控制参数:")
-        print(f"  前缀: {self.image_controls['prefix'].text()}")
-        print(f"  后缀: {self.image_controls['suffix'].text()}")
-        print(f"  格式: {self.image_controls['format'].currentText()}")
-        print(f"  质量: {self.image_controls['quality'].text()}%")
-        print(f"  输出路径: {self.image_controls['output_path'].text()}")
+        
+        # 获取输出设置
+        output_settings = self.image_controls.get('output_settings', {})
+        prefix = output_settings.get('prefix', 'Img_')
+        suffix = output_settings.get('suffix', '')
+        format_text = output_settings.get('format', 'JPG')
+        quality = output_settings.get('quality', 95)
+        force_size = output_settings.get('force_size', False)
+        output_width = output_settings.get('output_width', 1920)
+        output_height = output_settings.get('output_height', 1080)
+        output_path = self.image_controls['output_path'].text()
+        
+        print(f"  前缀: {prefix}")
+        print(f"  后缀: {suffix}")
+        print(f"  格式: {format_text}")
+        print(f"  质量: {quality}%")
+        print(f"  输出路径: {output_path}")
+        print(f"  强制输出尺寸: {'是' if force_size else '否'}")
+        if force_size:
+            print(f"  输出尺寸: {output_width}x{output_height} 像素")
 
         # 打印视频控制参数（需要先创建对应的控件）
         if hasattr(self, 'video_controls'):
@@ -635,23 +650,20 @@ class MainWindow(QMainWindow):
             processor_chain.add(WATERMARK_LEFT_LOGO_PROCESSOR)
             QMessageBox.information(self, "提示", "使用默认Processor配置")
 
-        # 获取UI控件中的参数
-        prefix = self.image_controls['prefix'].text().strip()
-        suffix = self.image_controls['suffix'].text().strip()
-        format_lower = self.image_controls['format'].currentText().lower()
-        
-        # 获取质量参数，确保在1-100范围内
-        try:
-            quality = int(self.image_controls['quality'].text().strip())
-            quality = max(1, min(100, quality))  # 限制在1-100范围内
-        except ValueError:
-            quality = 95  # 默认值
-            print(f"警告：质量参数无效，使用默认值 {quality}")
+        # 获取输出设置
+        output_settings = self.image_controls.get('output_settings', {})
+        prefix = output_settings.get('prefix', 'Img_').strip()
+        suffix = output_settings.get('suffix', '').strip()
+        format_lower = output_settings.get('format', 'JPG').lower()
+        quality = output_settings.get('quality', 95)
+        force_size = output_settings.get('force_size', False)
+        output_width = output_settings.get('output_width', 1920)
+        output_height = output_settings.get('output_height', 1080)
         
         # 获取输出目录
         output_dir = self.image_controls['output_path'].text().strip()
         if not output_dir:
-            output_dir = config.get_output_dir()
+            output_dir = output_settings.get('output_path', config.get_output_dir())
         
         # 创建输出目录
         output_path = Path(output_dir)
@@ -680,6 +692,10 @@ class MainWindow(QMainWindow):
                 container = ImageContainer(source_path)
                 container.is_use_equivalent_focal_length(config.use_equivalent_focal_length())
                 processor_chain.process(container)
+                
+                # 如果启用了强制输出尺寸，调整图片尺寸
+                if force_size:
+                    self.adjust_image_to_size(container, output_width, output_height)
                 
                 # 构建目标文件名
                 source_stem = source_path.stem  # 原文件名（不含扩展名）
@@ -733,10 +749,63 @@ class MainWindow(QMainWindow):
         message += f"\n文件名格式: {prefix}[原文件名]{'[时间戳]' if not suffix else suffix}.{format_lower}"
         message += f"\n图片质量: {quality}%"
         
+        if force_size:
+            message += f"\n输出尺寸: 强制 {output_width}x{output_height} 像素"
+        
         QMessageBox.information(self, "处理完成", message)
         print(f"处理完成，文件已输出至 {output_dir} 文件夹中")
         print(f"文件名格式: {prefix}[原文件名]{'[时间戳]' if not suffix else suffix}.{format_lower}")
         print(f"图片质量: {quality}%")
+        if force_size:
+            print(f"输出尺寸: 强制 {output_width}x{output_height} 像素")
+    
+    def adjust_image_to_size(self, container, target_width, target_height):
+        """
+        调整图片到指定的像素尺寸
+        
+        Args:
+            container: ImageContainer对象
+            target_width: 目标宽度（像素）
+            target_height: 目标高度（像素）
+        """
+        from PIL import Image
+        
+        # 获取当前图片尺寸
+        img = container.img
+        current_width = img.width
+        current_height = img.height
+        
+        # 如果当前尺寸已经接近目标尺寸，不需要调整
+        if (abs(current_width - target_width) < 5 and 
+            abs(current_height - target_height) < 5):
+            return
+        
+        # 计算缩放比例（保持宽高比）
+        width_ratio = target_width / current_width
+        height_ratio = target_height / current_height
+        scale_ratio = min(width_ratio, height_ratio)
+        
+        # 计算缩放后的尺寸
+        scaled_width = int(current_width * scale_ratio)
+        scaled_height = int(current_height * scale_ratio)
+        
+        # 缩放图片
+        scaled_img = img.resize((scaled_width, scaled_height), Image.Resampling.LANCZOS)
+        
+        # 创建新图片（白色背景）
+        new_img = Image.new('RGB', (target_width, target_height), (255, 255, 255))
+        
+        # 计算粘贴位置（居中）
+        paste_x = (target_width - scaled_width) // 2
+        paste_y = (target_height - scaled_height) // 2
+        
+        # 将缩放后的图片粘贴到新图片上
+        new_img.paste(scaled_img, (paste_x, paste_y))
+        
+        # 更新容器中的图片
+        container.update_img(new_img)
+        
+        print(f"已调整图片尺寸: {current_width}x{current_height} -> {target_width}x{target_height} (保持比例缩放)")
 
     def create_menu_bar(self):
         """创建菜单栏"""
@@ -987,5 +1056,3 @@ class MainWindow(QMainWindow):
                          "图片处理程序 v1.0\n\n"
                          "一个用于批量处理图片的应用程序，支持多种图片处理功能。\n\n"
                          "作者: ImageProcessor Team")
-
-

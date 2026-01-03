@@ -6,7 +6,7 @@ base:
   font: ./resources/fonts/AlibabaPuHuiTi-2-45-Light.otf
   font_size: 1
   input_dir: ./input
-  last_opened_dir: "G:\\01 DCIM\\BaiduSyncdisk\\04 \u62CD\u9E1F\u52A8\u7269\u4E0D\u9519"
+  last_opened_dir: G:\01 DCIM\100NZ502\202501_06
   output_dir: G:/Dev/PhotoYin/ImageProcesser/output
   quality: 100
 global:
@@ -104,3 +104,12 @@ logo:
     sony:
       id: SONY
       path: ./resources/logos/sony.png
+output_settings:
+  force_size: true
+  format: JPG
+  output_height: 1440
+  output_path: G:/Dev/PhotoYin/ImageProcesser/output
+  output_width: 2560
+  prefix: Img_
+  quality: 100
+  suffix: ''
