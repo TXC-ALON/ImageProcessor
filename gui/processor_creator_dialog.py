@@ -175,6 +175,9 @@ class ProcessorCreatorDialog(QDialog):
         
         # 连接颜色选择按钮
         self.border_color_btn.clicked.connect(self.choose_border_color)
+        
+        # 初始化颜色显示
+        self.update_color_display(self.border_color_edit)
     
     def init_blur_params(self):
         """初始化模糊参数 - 添加说明文本以保持与其他类别相似的高度"""
@@ -512,6 +515,9 @@ class ProcessorCreatorDialog(QDialog):
         self.font_color_lb_btn.clicked.connect(lambda: self.choose_color(self.font_color_lb_edit))
         self.font_color_rt_btn.clicked.connect(lambda: self.choose_color(self.font_color_rt_edit))
         self.font_color_rb_btn.clicked.connect(lambda: self.choose_color(self.font_color_rb_edit))
+        
+        # 初始化颜色显示
+        self.update_all_color_displays()
     
     def on_transform_type_changed(self, index):
         """当变形类型改变时切换到对应的参数界面"""
@@ -530,12 +536,47 @@ class ProcessorCreatorDialog(QDialog):
         color = QColorDialog.getColor(QColor(self.border_color_edit.text()))
         if color.isValid():
             self.border_color_edit.setText(color.name())
+            self.update_color_display(self.border_color_edit)
     
     def choose_color(self, line_edit):
         """选择颜色"""
         color = QColorDialog.getColor(QColor(line_edit.text()))
         if color.isValid():
             line_edit.setText(color.name())
+            self.update_color_display(line_edit)
+    
+    def update_color_display(self, line_edit):
+        """更新颜色文本框的显示"""
+        try:
+            color = QColor(line_edit.text())
+            if color.isValid():
+                # 设置背景色为选择的颜色
+                line_edit.setStyleSheet(f"background-color: {color.name()}; color: {'white' if color.lightness() < 128 else 'black'};")
+            else:
+                # 无效颜色时恢复默认样式
+                line_edit.setStyleSheet("")
+        except:
+            line_edit.setStyleSheet("")
+    
+    def update_all_color_displays(self):
+        """更新所有颜色文本框的显示"""
+        # 边框颜色
+        if hasattr(self, 'border_color_edit'):
+            self.update_color_display(self.border_color_edit)
+        
+        # 水印背景颜色
+        if hasattr(self, 'bg_color_edit'):
+            self.update_color_display(self.bg_color_edit)
+        
+        # 水印字体颜色
+        if hasattr(self, 'font_color_lt_edit'):
+            self.update_color_display(self.font_color_lt_edit)
+        if hasattr(self, 'font_color_lb_edit'):
+            self.update_color_display(self.font_color_lb_edit)
+        if hasattr(self, 'font_color_rt_edit'):
+            self.update_color_display(self.font_color_rt_edit)
+        if hasattr(self, 'font_color_rb_edit'):
+            self.update_color_display(self.font_color_rb_edit)
     
     def get_border_params(self) -> BorderParams:
         """获取边框参数"""
