@@ -787,6 +787,9 @@ class MainWindow(QMainWindow):
             abs(current_height - target_height) < 5):
             return
         
+        # 获取原始图片的DPI信息
+        original_dpi = img.info.get('dpi')
+        
         # 计算缩放比例（保持宽高比）
         width_ratio = target_width / current_width
         height_ratio = target_height / current_height
@@ -811,6 +814,13 @@ class MainWindow(QMainWindow):
         
         # 更新容器中的图片
         container.update_img(new_img)
+        
+        # 保存DPI信息到容器中，以便在保存时使用
+        # 由于我们不能直接修改PIL图片的info字典，我们将在保存时传递dpi参数
+        # 这里我们存储DPI信息到容器的额外属性中
+        if original_dpi:
+            # 创建一个简单的属性来存储DPI信息
+            container._saved_dpi = original_dpi
         
         print(f"已调整图片尺寸: {current_width}x{current_height} -> {target_width}x{target_height} (保持比例缩放)")
 

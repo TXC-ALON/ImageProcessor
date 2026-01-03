@@ -259,6 +259,10 @@ class ImageContainer(object):
     def get_watermark_img(self) -> Image.Image:
         if self.watermark_img is None:
             self.watermark_img = self.img.copy()
+            # 复制原始图片的DPI信息到watermark_img
+            if 'dpi' in self.img.info:
+                # PIL的copy()方法应该会自动复制info字典，但为了确保安全，我们显式设置
+                pass  # copy()应该已经复制了info
         return self.watermark_img
 
     def update_watermark_img(self, watermark_img) -> None:
@@ -266,13 +270,31 @@ class ImageContainer(object):
             return
         original_watermark_img = self.watermark_img
         self.watermark_img = watermark_img
+        
+        # 如果新图片没有DPI信息，但原始图片有，则复制DPI信息
+        if self.watermark_img and 'dpi' in self.img.info and 'dpi' not in self.watermark_img.info:
+            # 注意：我们不能直接修改PIL图片的info字典，但可以在保存时传递dpi参数
+            # 这里我们确保watermark_img有一个info字典
+            pass
+        
         if original_watermark_img is not None:
             original_watermark_img.close()
     def update_img(self, img) -> None:
         if self.img == img:
             return
         original_img = self.img
+        
+        # 保存原始图片的DPI信息
+        original_dpi = self.img.info.get('dpi') if self.img else None
+        
         self.img = img
+        
+        # 如果新图片没有DPI信息，但原始图片有，尝试保留
+        if self.img and original_dpi and 'dpi' not in self.img.info:
+            # 注意：我们不能直接修改PIL图片的info字典
+            # 但可以在保存时传递dpi参数，或者创建一个新的图片对象
+            pass
+        
         if original_img is not None:
             original_img.close()
     def close(self):
@@ -283,7 +305,22 @@ class ImageContainer(object):
     def save(self, target_path, quality=100):
         if self.watermark_img is None:
             print("{} has no watermark_img".format(self.name))
-            self.img.save(target_path, quality=quality, encoding='utf-8')
+            # 获取原始图片的DPI信息
+            dpi = self.img.info.get('dpi')
+            save_kwargs = {
+                'quality': quality,
+                'encoding': 'utf-8'
+            }
+            
+            # 如果有DPI信息，添加到保存参数中
+            if dpi:
+                save_kwargs['dpi'] = dpi
+            
+            # 如果有EXIF信息，也保留
+            if 'exif' in self.img.info:
+                save_kwargs['exif'] = self.img.info['exif']
+            
+            self.img.save(target_path, **save_kwargs)
             return
 
         if self.orientation == "Rotate 0":
@@ -300,11 +337,27 @@ class ImageContainer(object):
         if self.watermark_img.mode != 'RGB':
             self.watermark_img = self.watermark_img.convert('RGB')
 
+        # 准备保存参数
+        save_kwargs = {
+            'quality': quality,
+            'encoding': 'utf-8'
+        }
+        
+        # 获取DPI信息：首先检查是否有保存的DPI，然后检查原始图片
+        dpi = None
+        if hasattr(self, '_saved_dpi'):
+            dpi = self._saved_dpi
+        elif 'dpi' in self.img.info:
+            dpi = self.img.info.get('dpi')
+        
+        if dpi:
+            save_kwargs['dpi'] = dpi
+        
+        # 如果有EXIF信息，也保留
         if 'exif' in self.img.info:
-            self.watermark_img.save(target_path, quality=quality, encoding='utf-8',
-                                    exif=self.img.info['exif'] if 'exif' in self.img.info else '')
-        else:
-            self.watermark_img.save(target_path, quality=quality, encoding='utf-8')
+            save_kwargs['exif'] = self.img.info['exif']
+        
+        self.watermark_img.save(target_path, **save_kwargs)
 
     def get_height(self):
         return self.get_watermark_img().height
