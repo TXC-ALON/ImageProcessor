@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont
+from mypyc.crash import catch_errors
 
 from core.processor_types import (
     ProcessorCategory, TransformType, BorderParams, BlurParams,
@@ -111,7 +112,12 @@ class ProcessorCreatorDialog(QDialog):
         elif category == ProcessorCategory.TRANSFORM:
             self.init_transform_params()
         elif category == ProcessorCategory.WATERMARK:
-            self.init_watermark_params()
+            try:
+                self.init_watermark_params()
+            except Exception as e:
+                print({e})
+
+
     
     def clear_params_layout(self):
         """清空参数布局"""
@@ -533,12 +539,20 @@ class ProcessorCreatorDialog(QDialog):
         self.font_color_rt_btn.clicked.connect(lambda: self.choose_color(self.font_color_rt_edit))
         self.font_color_rb_btn.clicked.connect(lambda: self.choose_color(self.font_color_rb_edit))
         
-        # 初始化颜色显示
-        self.update_all_color_displays()
+        # 初始化颜色显示 - 只更新当前创建的控件
+        self.update_watermark_color_displays()
     
     def on_transform_type_changed(self, index):
         """当变形类型改变时切换到对应的参数界面"""
+        # 检查控件是否存在
+        if not hasattr(self, 'transform_type_combo') or self.transform_type_combo is None:
+            return
+        
         transform_type = self.transform_type_combo.currentData()
+        
+        # 检查StackedWidget是否存在
+        if not hasattr(self, 'transform_params_stacked') or self.transform_params_stacked is None:
+            return
         
         # 根据变形类型切换到对应的StackedWidget页面
         if transform_type == TransformType.SQUARE:
@@ -564,84 +578,114 @@ class ProcessorCreatorDialog(QDialog):
     
     def update_color_display(self, line_edit):
         """更新颜色文本框的显示"""
-        try:
-            color = QColor(line_edit.text())
-            if color.isValid():
-                # 设置背景色为选择的颜色
-                line_edit.setStyleSheet(f"background-color: {color.name()}; color: {'white' if color.lightness() < 128 else 'black'};")
-            else:
-                # 无效颜色时恢复默认样式
-                line_edit.setStyleSheet("")
-        except:
+        color = QColor(line_edit.text())
+        if color.isValid():
+            # 设置背景色为选择的颜色
+            line_edit.setStyleSheet(f"background-color: {color.name()}; color: {'white' if color.lightness() < 128 else 'black'};")
+        else:
+            # 无效颜色时恢复默认样式
             line_edit.setStyleSheet("")
+    
+    def update_watermark_color_displays(self):
+        """只更新水印相关的颜色文本框显示"""
+        # 水印背景颜色
+        if hasattr(self, 'bg_color_edit') and self.bg_color_edit is not None:
+            self.update_color_display(self.bg_color_edit)
+        
+        # 水印字体颜色
+        if hasattr(self, 'font_color_lt_edit') and self.font_color_lt_edit is not None:
+            self.update_color_display(self.font_color_lt_edit)
+        if hasattr(self, 'font_color_lb_edit') and self.font_color_lb_edit is not None:
+            self.update_color_display(self.font_color_lb_edit)
+        if hasattr(self, 'font_color_rt_edit') and self.font_color_rt_edit is not None:
+            self.update_color_display(self.font_color_rt_edit)
+        if hasattr(self, 'font_color_rb_edit') and self.font_color_rb_edit is not None:
+            self.update_color_display(self.font_color_rb_edit)
     
     def update_all_color_displays(self):
         """更新所有颜色文本框的显示"""
         # 边框颜色
-        if hasattr(self, 'border_color_edit'):
+        if hasattr(self, 'border_color_edit') and self.border_color_edit is not None:
             self.update_color_display(self.border_color_edit)
         
         # 水印背景颜色
-        if hasattr(self, 'bg_color_edit'):
+        if hasattr(self, 'bg_color_edit') and self.bg_color_edit is not None:
             self.update_color_display(self.bg_color_edit)
         
         # 水印字体颜色
-        if hasattr(self, 'font_color_lt_edit'):
+        if hasattr(self, 'font_color_lt_edit') and self.font_color_lt_edit is not None:
             self.update_color_display(self.font_color_lt_edit)
-        if hasattr(self, 'font_color_lb_edit'):
+        if hasattr(self, 'font_color_lb_edit') and self.font_color_lb_edit is not None:
             self.update_color_display(self.font_color_lb_edit)
-        if hasattr(self, 'font_color_rt_edit'):
+        if hasattr(self, 'font_color_rt_edit') and self.font_color_rt_edit is not None:
             self.update_color_display(self.font_color_rt_edit)
-        if hasattr(self, 'font_color_rb_edit'):
+        if hasattr(self, 'font_color_rb_edit') and self.font_color_rb_edit is not None:
             self.update_color_display(self.font_color_rb_edit)
     
     def get_border_params(self) -> BorderParams:
         """获取边框参数"""
-        # 解析边框边
-        sides_text = self.border_sides_combo.currentText()
-        sides_map = {
-            "全部 (tlrb)": "tlrb",
-            "上边 (t)": "t",
-            "下边 (b)": "b",
-            "左边 (l)": "l",
-            "右边 (r)": "r",
-            "上下 (tb)": "tb",
-            "左右 (lr)": "lr",
-            "上左右 (tlr)": "tlr",
-            "下左右 (blr)": "blr"
-        }
-        sides = sides_map.get(sides_text, "tlrb")
+        # 检查控件是否存在
+        if not hasattr(self, 'border_sides_combo') or self.border_sides_combo is None:
+            sides = "tlrb"
+        else:
+            sides_text = self.border_sides_combo.currentText()
+            sides_map = {
+                "全部 (tlrb)": "tlrb",
+                "上边 (t)": "t",
+                "下边 (b)": "b",
+                "左边 (l)": "l",
+                "右边 (r)": "r",
+                "上下 (tb)": "tb",
+                "左右 (lr)": "lr",
+                "上左右 (tlr)": "tlr",
+                "下左右 (blr)": "blr"
+            }
+            sides = sides_map.get(sides_text, "tlrb")
+        
+        # 使用默认值如果控件不存在
+        border_size = self.border_size_spin.value() if hasattr(self, 'border_size_spin') and self.border_size_spin is not None else 10
+        border_color = self.border_color_edit.text() if hasattr(self, 'border_color_edit') and self.border_color_edit is not None else "#ffffff"
         
         return BorderParams(
-            border_size=self.border_size_spin.value(),
-            border_color=self.border_color_edit.text(),
+            border_size=border_size,
+            border_color=border_color,
             sides=sides
         )
     
     def get_blur_params(self) -> BlurParams:
         """获取模糊参数"""
+        # 使用默认值如果控件不存在
+        blur_radius = self.blur_radius_spin.value() if hasattr(self, 'blur_radius_spin') and self.blur_radius_spin is not None else 35
+        padding_percent = self.padding_percent_spin.value() if hasattr(self, 'padding_percent_spin') and self.padding_percent_spin is not None else 0.15
+        blend_alpha = self.blend_alpha_spin.value() if hasattr(self, 'blend_alpha_spin') and self.blend_alpha_spin is not None else 0.1
+        
         return BlurParams(
-            blur_radius=self.blur_radius_spin.value(),
-            padding_percent=self.padding_percent_spin.value(),
-            blend_alpha=self.blend_alpha_spin.value()
+            blur_radius=blur_radius,
+            padding_percent=padding_percent,
+            blend_alpha=blend_alpha
         )
     
     def get_transform_params(self) -> TransformParams:
         """获取图像变形参数"""
-        transform_type = self.transform_type_combo.currentData()
+        # 检查控件是否存在
+        if not hasattr(self, 'transform_type_combo') or self.transform_type_combo is None:
+            transform_type = TransformType.SQUARE
+        else:
+            transform_type = self.transform_type_combo.currentData()
+        
+        target_ratio = None
+        radius = None
         
         if transform_type == TransformType.RATIO:
             # 从宽度和高度计算比例
-            width = self.target_width_spin.value()
-            height = self.target_height_spin.value()
-            target_ratio = width / height if height > 0 else 1.0
-            radius = None
+            if hasattr(self, 'target_width_spin') and self.target_width_spin is not None and \
+               hasattr(self, 'target_height_spin') and self.target_height_spin is not None:
+                width = self.target_width_spin.value()
+                height = self.target_height_spin.value()
+                target_ratio = width / height if height > 0 else 1.0
         elif transform_type == TransformType.ROUNDED:
-            target_ratio = None
-            radius = self.radius_spin.value() if self.radius_spin.value() > 0 else None
-        else:  # SQUARE
-            target_ratio = None
-            radius = None
+            if hasattr(self, 'radius_spin') and self.radius_spin is not None:
+                radius = self.radius_spin.value() if self.radius_spin.value() > 0 else None
         
         return TransformParams(
             transform_type=transform_type,
@@ -651,24 +695,72 @@ class ProcessorCreatorDialog(QDialog):
     
     def get_watermark_params(self) -> WatermarkParams:
         """获取水印参数"""
-        # 获取logo_name，如果为None则使用默认值"auto"
-        logo_name = self.logo_name_combo.currentData()
-        if logo_name is None:
-            logo_name = "auto"
+        # 检查控件是否存在，使用默认值如果不存在
+        logo_position = "right"
+        if hasattr(self, 'logo_position_combo') and self.logo_position_combo is not None:
+            logo_position = "left" if self.logo_position_combo.currentText() == "左侧" else "right"
+        
+        logo_enable = True
+        if hasattr(self, 'logo_enable_check') and self.logo_enable_check is not None:
+            logo_enable = self.logo_enable_check.isChecked()
+        
+        # 获取logo_name
+        logo_name = "auto"
+        if hasattr(self, 'logo_name_combo') and self.logo_name_combo is not None:
+            logo_name = self.logo_name_combo.currentData()
+            if logo_name is None:
+                logo_name = "auto"
+        
+        # 颜色值
+        bg_color = "#ffffff"
+        if hasattr(self, 'bg_color_edit') and self.bg_color_edit is not None:
+            bg_color = self.bg_color_edit.text()
+        
+        font_color_lt = "#212121"
+        if hasattr(self, 'font_color_lt_edit') and self.font_color_lt_edit is not None:
+            font_color_lt = self.font_color_lt_edit.text()
+        
+        bold_font_lt = True
+        if hasattr(self, 'bold_font_lt_check') and self.bold_font_lt_check is not None:
+            bold_font_lt = self.bold_font_lt_check.isChecked()
+        
+        font_color_lb = "#424242"
+        if hasattr(self, 'font_color_lb_edit') and self.font_color_lb_edit is not None:
+            font_color_lb = self.font_color_lb_edit.text()
+        
+        bold_font_lb = False
+        if hasattr(self, 'bold_font_lb_check') and self.bold_font_lb_check is not None:
+            bold_font_lb = self.bold_font_lb_check.isChecked()
+        
+        font_color_rt = "#212121"
+        if hasattr(self, 'font_color_rt_edit') and self.font_color_rt_edit is not None:
+            font_color_rt = self.font_color_rt_edit.text()
+        
+        bold_font_rt = True
+        if hasattr(self, 'bold_font_rt_check') and self.bold_font_rt_check is not None:
+            bold_font_rt = self.bold_font_rt_check.isChecked()
+        
+        font_color_rb = "#424242"
+        if hasattr(self, 'font_color_rb_edit') and self.font_color_rb_edit is not None:
+            font_color_rb = self.font_color_rb_edit.text()
+        
+        bold_font_rb = False
+        if hasattr(self, 'bold_font_rb_check') and self.bold_font_rb_check is not None:
+            bold_font_rb = self.bold_font_rb_check.isChecked()
         
         return WatermarkParams(
-            logo_position="left" if self.logo_position_combo.currentText() == "左侧" else "right",
-            logo_enable=self.logo_enable_check.isChecked(),
+            logo_position=logo_position,
+            logo_enable=logo_enable,
             logo_name=logo_name,
-            bg_color=self.bg_color_edit.text(),
-            font_color_lt=self.font_color_lt_edit.text(),
-            bold_font_lt=self.bold_font_lt_check.isChecked(),
-            font_color_lb=self.font_color_lb_edit.text(),
-            bold_font_lb=self.bold_font_lb_check.isChecked(),
-            font_color_rt=self.font_color_rt_edit.text(),
-            bold_font_rt=self.bold_font_rt_check.isChecked(),
-            font_color_rb=self.font_color_rb_edit.text(),
-            bold_font_rb=self.bold_font_rb_check.isChecked()
+            bg_color=bg_color,
+            font_color_lt=font_color_lt,
+            bold_font_lt=bold_font_lt,
+            font_color_lb=font_color_lb,
+            bold_font_lb=bold_font_lb,
+            font_color_rt=font_color_rt,
+            bold_font_rt=bold_font_rt,
+            font_color_rb=font_color_rb,
+            bold_font_rb=bold_font_rb
         )
     
     def create_processor(self):

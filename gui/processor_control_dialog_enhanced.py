@@ -72,10 +72,21 @@ class ProcessorControlDialogEnhanced(QDialog):
         # 自定义Processor
         custom_group = QGroupBox("自定义Processor")
         custom_layout = QVBoxLayout()
+        
+        # 自定义Processor操作按钮
+        custom_buttons_layout = QHBoxLayout()
+        self.btn_remove_custom = QPushButton("移除选中")
+        self.btn_clear_custom = QPushButton("清空全部")
+        custom_buttons_layout.addWidget(self.btn_remove_custom)
+        custom_buttons_layout.addWidget(self.btn_clear_custom)
+        custom_buttons_layout.addStretch()
+        
         self.custom_list = QListWidget()
         self.custom_list.setSelectionMode(QListWidget.ExtendedSelection)  # 改为ExtendedSelection，支持Ctrl键多选
         self.custom_list.setDragEnabled(True)  # 启用拖拽
         self.custom_list.setDragDropMode(QListWidget.DragOnly)  # 只允许拖出
+        
+        custom_layout.addLayout(custom_buttons_layout)
         custom_layout.addWidget(self.custom_list)
         custom_group.setLayout(custom_layout)
         
@@ -160,6 +171,10 @@ class ProcessorControlDialogEnhanced(QDialog):
         self.btn_import_json.clicked.connect(self.import_json)
         self.btn_ok.clicked.connect(self.accept)
         self.btn_cancel.clicked.connect(self.reject)
+        
+        # 连接自定义Processor按钮信号
+        self.btn_remove_custom.clicked.connect(self.remove_custom_processor)
+        self.btn_clear_custom.clicked.connect(self.clear_custom_processors)
         
         # 连接双击信号
         self.default_list.itemDoubleClicked.connect(self.on_item_double_clicked)
@@ -321,6 +336,92 @@ class ProcessorControlDialogEnhanced(QDialog):
         """清空已选Processor列表"""
         self.selected_list.clear()
         self.update_selected_processors()
+    
+    def remove_custom_processor(self):
+        """移除选中的自定义Processor"""
+        selected_items = self.custom_list.selectedItems()
+        if not selected_items:
+            QMessageBox.information(self, "提示", "请先选择要移除的自定义Processor")
+            return
+        
+        # 确认删除
+        reply = QMessageBox.question(
+            self, "确认删除",
+            f"确定要删除选中的 {len(selected_items)} 个自定义Processor吗？\n"
+            "这将同时删除对应的配置文件。",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        deleted_count = 0
+        for item in selected_items:
+            processor_id = item.data(Qt.UserRole)
+            processor_config = item.data(Qt.UserRole + 2)
+            
+            # 删除配置文件
+            config_dir = Path("config/processors")
+            config_file = config_dir / f"{processor_id}.json"
+            
+            if config_file.exists():
+                try:
+                    config_file.unlink()
+                    deleted_count += 1
+                    print(f"已删除配置文件: {config_file}")
+                except Exception as e:
+                    print(f"删除配置文件失败: {e}")
+            
+            # 从列表中移除
+            row = self.custom_list.row(item)
+            self.custom_list.takeItem(row)
+        
+        if deleted_count > 0:
+            QMessageBox.information(self, "成功", f"已删除 {deleted_count} 个自定义Processor")
+            
+            # 重新加载自定义Processor列表
+            self.load_custom_processors()
+    
+    def clear_custom_processors(self):
+        """清空所有自定义Processor"""
+        if self.custom_list.count() == 0:
+            QMessageBox.information(self, "提示", "没有自定义Processor可清空")
+            return
+        
+        # 确认清空
+        reply = QMessageBox.question(
+            self, "确认清空",
+            f"确定要清空所有 {self.custom_list.count()} 个自定义Processor吗？\n"
+            "这将同时删除所有对应的配置文件。",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        # 删除所有配置文件
+        config_dir = Path("config/processors")
+        deleted_count = 0
+        
+        for i in range(self.custom_list.count()):
+            item = self.custom_list.item(i)
+            processor_id = item.data(Qt.UserRole)
+            
+            config_file = config_dir / f"{processor_id}.json"
+            if config_file.exists():
+                try:
+                    config_file.unlink()
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"删除配置文件失败: {e}")
+        
+        # 清空列表
+        self.custom_list.clear()
+        
+        if deleted_count > 0:
+            QMessageBox.information(self, "成功", f"已清空 {deleted_count} 个自定义Processor")
     
     def on_selected_order_changed(self):
         """当已选列表顺序改变时更新"""
