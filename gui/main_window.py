@@ -20,6 +20,9 @@ from core.init import config
 from config.constant import DEBUG
 from tqdm import tqdm
 
+# 导入视频创建模块
+from core.video_creator import VideoCreator, VideoSettings, PlaybackMode
+
 
 class DragDropTableView(QTableView):
     """支持拖拽文件的表格视图"""
@@ -112,10 +115,14 @@ class MainWindow(QMainWindow):
         image_group, self.image_controls = create_image_control_group(parent=self)
 
         # 视频控制参数
-        video_group, self.video_controls = create_video_control_group()
+        video_group, self.video_controls = create_video_control_group(parent=self)
 
         left_layout.addWidget(image_group)
         left_layout.addWidget(video_group)
+        
+        # 连接视频创建按钮
+        if self.video_controls and 'create_button' in self.video_controls:
+            self.video_controls['create_button'].clicked.connect(self.create_video)
         
         # 添加打印参数按钮
         btn_print_params = QPushButton("打印所有参数")
@@ -1004,3 +1011,71 @@ class MainWindow(QMainWindow):
                          "图片处理程序 v1.0\n\n"
                          "一个用于批量处理图片的应用程序，支持多种图片处理功能。\n\n"
                          "作者: ImageProcessor Team")
+    
+    def create_video(self):
+        """创建视频"""
+        if not self.video_controls:
+            QMessageBox.warning(self, "警告", "视频控件未初始化")
+            return
+        
+        try:
+            # 获取视频设置
+            playback_mode_text = self.video_controls['playback_mode'].currentText()
+            playback_mode = PlaybackMode.FIT_TO_MUSIC if playback_mode_text == "适配音乐时长" else PlaybackMode.FIXED_DURATION
+            
+            # 获取音乐路径
+            music_data = self.video_controls['music'].currentData()
+            audio_path = music_data if music_data else None
+            
+            # 创建视频设置
+            settings = VideoSettings(
+                output_path=self.video_controls['output_path'].text(),
+                fps=int(self.video_controls['fps'].text()),
+                codec=self.video_controls['codec'].currentText(),
+                bitrate=self.video_controls['bitrate'].text(),
+                resolution=self.video_controls['resolution'].currentText(),
+                playback_mode=playback_mode,
+                image_duration=float(self.video_controls['image_duration'].text()),
+                transition_duration=float(self.video_controls['transition_duration'].text()),
+                loop_images=self.video_controls['loop_images'].isChecked(),
+                include_audio=self.video_controls['include_audio'].isChecked(),
+                audio_path=audio_path,
+                audio_volume=float(self.video_controls['audio_volume'].text()),
+                fade_in_duration=float(self.video_controls['fade_in'].text()),
+                fade_out_duration=float(self.video_controls['fade_out'].text())
+            )
+            
+            # 创建视频创建器
+            creator = VideoCreator(settings)
+            
+            # 显示进度对话框
+            progress = QProgressDialog("正在创建视频...", "取消", 0, 100, self)
+            progress.setWindowTitle("视频创建进度")
+            progress.setWindowModality(Qt.WindowModal)
+            progress.setMinimumDuration(0)
+            
+            # 在单独的线程中创建视频（简化版本，实际应该使用QThread）
+            # 这里为了简单，直接调用
+            progress.setLabelText("正在准备图片...")
+            progress.setValue(10)
+            QApplication.processEvents()
+            
+            # 创建视频
+            success = creator.create_video_from_output_folder()
+            
+            progress.setValue(100)
+            progress.close()
+            
+            if success:
+                QMessageBox.information(self, "成功", f"视频创建成功！\n输出路径: {settings.output_path}")
+                self.statusBar().showMessage(f"视频创建成功: {settings.output_path}", 5000)
+            else:
+                QMessageBox.warning(self, "失败", "视频创建失败，请查看控制台日志")
+                self.statusBar().showMessage("视频创建失败", 5000)
+                
+        except ValueError as e:
+            QMessageBox.warning(self, "输入错误", f"参数输入错误: {e}")
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"创建视频时发生错误: {e}")
+            import traceback
+            traceback.print_exc()
