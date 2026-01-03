@@ -143,13 +143,14 @@ class VideoCreator:
             return None
 
         try:
-            # 使用ffprobe获取音频时长
+            # 使用ffprobe获取音频时长（确保路径被正确引用）
+            audio_path = Path(self.settings.audio_path)
             cmd = [
                 'ffprobe',
                 '-v', 'error',
                 '-show_entries', 'format=duration',
                 '-of', 'default=noprint_wrappers=1:nokey=1',
-                self.settings.audio_path
+                str(audio_path.absolute())
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -195,26 +196,23 @@ class VideoCreator:
         # 输入图片列表
         cmd.extend(['-f', 'concat', '-safe', '0', '-i', str(image_list_file)])
         
-        # 解析分辨率
-        resolution = self.settings.resolution
-        width, height = resolution.split('x')
-        
-        # 视频编码参数
-        cmd.extend([
-            '-c:v', self.settings.codec,
-            '-b:v', self.settings.bitrate,
-            '-r', str(self.settings.fps),
-            '-pix_fmt', 'yuv420p',
-            '-vf', f'scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2'
-        ])
-        
         # 音频处理
         if self.settings.include_audio and self.settings.audio_path:
-            # 添加音频输入
-            cmd.extend(['-i', self.settings.audio_path])
+            # 添加音频输入（确保路径被正确引用）
+            audio_path = Path(self.settings.audio_path)
+            cmd.extend(['-i', str(audio_path.absolute())])
             
-            # 音频编码参数
+            # 解析分辨率
+            resolution = self.settings.resolution
+            width, height = resolution.split('x')
+            
+            # 视频编码参数（必须在音频输入之后）
             cmd.extend([
+                '-c:v', self.settings.codec,
+                '-b:v', self.settings.bitrate,
+                '-r', str(self.settings.fps),
+                '-pix_fmt', 'yuv420p',
+                '-vf', f'scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2',
                 '-c:a', 'aac',
                 '-b:a', '192k',
                 '-filter_complex',
@@ -226,7 +224,19 @@ class VideoCreator:
             ])
         else:
             # 无音频
-            cmd.extend(['-an'])
+            # 解析分辨率
+            resolution = self.settings.resolution
+            width, height = resolution.split('x')
+            
+            # 视频编码参数
+            cmd.extend([
+                '-c:v', self.settings.codec,
+                '-b:v', self.settings.bitrate,
+                '-r', str(self.settings.fps),
+                '-pix_fmt', 'yuv420p',
+                '-vf', f'scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2',
+                '-an'  # 无音频
+            ])
         
         # 输出文件
         cmd.append(self.settings.output_path)
