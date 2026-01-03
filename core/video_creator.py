@@ -105,6 +105,35 @@ class VideoCreator:
             temp_file = Path("temp_image_list.txt")
 
             with open(temp_file, 'w', encoding='utf-8') as f:
+                # 计算每张图片的持续时间
+                image_duration = self._calculate_image_duration()
+                
+                # 如果需要循环播放图片且音频比视频长
+                if (self.settings.loop_images and 
+                    self.settings.include_audio and 
+                    self.settings.audio_path):
+                    
+                    # 获取音频时长
+                    audio_duration = self._get_music_duration()
+                    if audio_duration and audio_duration > 0:
+                        # 计算需要循环多少次
+                        total_images_needed = int(audio_duration / image_duration) + 1
+                        logger.info(f"音频时长 {audio_duration:.1f}s，图片时长 {image_duration:.1f}s，需要循环 {total_images_needed} 次")
+                        
+                        # 循环写入图片
+                        for i in range(total_images_needed):
+                            img_idx = i % len(image_paths)
+                            img_path = Path(image_paths[img_idx])
+                            if not img_path.exists():
+                                logger.warning(f"图片不存在: {img_path}")
+                                continue
+                            
+                            f.write(f"file '{img_path.absolute()}'\n")
+                            f.write(f"duration {image_duration}\n")
+                        
+                        return temp_file if temp_file.exists() else None
+                
+                # 正常模式：不循环或不需要循环
                 for image_path in image_paths:
                     img_path = Path(image_path)
                     if not img_path.exists():
@@ -112,9 +141,8 @@ class VideoCreator:
                         continue
 
                     # 写入图片路径和持续时间
-                    duration = self._calculate_image_duration()
                     f.write(f"file '{img_path.absolute()}'\n")
-                    f.write(f"duration {duration}\n")
+                    f.write(f"duration {image_duration}\n")
 
             return temp_file if temp_file.exists() else None
 
@@ -206,6 +234,21 @@ class VideoCreator:
             resolution = self.settings.resolution
             width, height = resolution.split('x')
             
+            # 获取音频时长
+            audio_duration = self._get_music_duration()
+            video_duration = self._calculate_video_duration()
+            
+            # 确定淡出开始时间：使用音频时长或视频时长中的较小值
+            if audio_duration and audio_duration > 0:
+                # 如果音频比视频长，使用视频时长作为淡出开始时间
+                fade_out_start = min(video_duration, audio_duration) - self.settings.fade_out_duration
+            else:
+                # 无法获取音频时长，使用视频时长
+                fade_out_start = video_duration - self.settings.fade_out_duration
+            
+            # 确保淡出开始时间不小于0
+            fade_out_start = max(0, fade_out_start)
+            
             # 视频编码参数（必须在音频输入之后）
             cmd.extend([
                 '-c:v', self.settings.codec,
@@ -218,9 +261,10 @@ class VideoCreator:
                 '-filter_complex',
                 f'[1:a]volume={self.settings.audio_volume}[audio];'
                 f'[audio]afade=t=in:st=0:d={self.settings.fade_in_duration},'
-                f'afade=t=out:st={self._calculate_video_duration() - self.settings.fade_out_duration}:d={self.settings.fade_out_duration}[final_audio]',
+                f'afade=t=out:st={fade_out_start}:d={self.settings.fade_out_duration}[final_audio]',
                 '-map', '0:v',
-                '-map', '[final_audio]'
+                '-map', '[final_audio]',
+                '-shortest'  # 以视频或音频中较短的一个为准
             ])
         else:
             # 无音频
@@ -250,6 +294,19 @@ class VideoCreator:
             return 0.0
 
         image_duration = self._calculate_image_duration()
+        
+        # 如果需要循环播放图片且音频比视频长
+        if (self.settings.loop_images and 
+            self.settings.include_audio and 
+            self.settings.audio_path):
+            
+            # 获取音频时长
+            audio_duration = self._get_music_duration()
+            if audio_duration and audio_duration > 0:
+                # 视频时长应该等于音频时长
+                return audio_duration
+        
+        # 正常模式：不循环或不需要循环
         return len(image_paths) * image_duration
 
     def create_video_from_output_folder(self) -> bool:
