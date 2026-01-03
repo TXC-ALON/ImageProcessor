@@ -12,9 +12,6 @@ def create_image_control_group(parent=None):
     group = QGroupBox("图片控制参数", parent)
     form = QFormLayout()
 
-    # 输出控制按钮
-
-    
     # 输出设置状态标签
     output_status_label = QLabel("默认")
     output_status_label.setStyleSheet("color: #666; font-size: 18px;")

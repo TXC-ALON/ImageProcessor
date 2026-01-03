@@ -105,7 +105,7 @@ logo:
       id: SONY
       path: ./resources/logos/sony.png
 output_settings:
-  force_size: true
+  force_size: false
   format: JPG
   output_height: 1440
   output_path: G:/Dev/PhotoYin/ImageProcesser/output

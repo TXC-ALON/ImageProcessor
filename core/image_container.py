@@ -277,7 +277,8 @@ class ImageContainer(object):
             original_img.close()
     def close(self):
         self.img.close()
-        self.watermark_img.close()
+        if self.watermark_img is not None:
+            self.watermark_img.close()
 
     def save(self, target_path, quality=100):
         if self.watermark_img is None:

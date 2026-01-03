@@ -66,6 +66,16 @@ class EmptyProcessor(ProcessorComponent):
     def process(self, container: ImageContainer) -> None:
         pass
 
+class FitSizeProcessor(ProcessorComponent):
+    LAYOUT_ID = 'fit size'
+    LAYOUT_NAME = '调整尺寸'
+
+    def process(self, container: ImageContainer) -> None:
+        image = container.get_watermark_img()
+        output_config = self.config.get_output_settings()
+        height = output_config["output_height"]
+        image = resize_image_with_height(image, int(height))
+        container.update_watermark_img(image)
 
 class ShadowProcessor(ProcessorComponent):
     LAYOUT_ID = 'shadow'

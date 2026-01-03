@@ -14,7 +14,7 @@ from .processor_control_dialog_enhanced import ProcessorControlDialogEnhanced as
 from core.image_container import ImageContainer
 from core.image_processor import ProcessorChain
 
-from core.init import (WATERMARK_LEFT_LOGO_PROCESSOR, ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR)
+from core.init import (WATERMARK_LEFT_LOGO_PROCESSOR, ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR, EMPTY_PROCESSOR,FIT_SIZE_PROCESSOR)
 from core.init import config
 
 from config.constant import DEBUG
@@ -646,9 +646,13 @@ class MainWindow(QMainWindow):
         else:
             # 如果没有选择Processor，使用默认的
             processor_chain = ProcessorChain()
-            processor_chain.add(ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR)
-            processor_chain.add(WATERMARK_LEFT_LOGO_PROCESSOR)
+            processor_chain.add(EMPTY_PROCESSOR)
+
+
             QMessageBox.information(self, "提示", "使用默认Processor配置")
+
+
+
 
         # 获取输出设置
         output_settings = self.image_controls.get('output_settings', {})
@@ -659,7 +663,10 @@ class MainWindow(QMainWindow):
         force_size = output_settings.get('force_size', False)
         output_width = output_settings.get('output_width', 1920)
         output_height = output_settings.get('output_height', 1080)
-        
+
+        if force_size:
+            processor_chain.add(FIT_SIZE_PROCESSOR)
+
         # 获取输出目录
         output_dir = self.image_controls['output_path'].text().strip()
         if not output_dir:

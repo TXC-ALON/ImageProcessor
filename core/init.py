@@ -20,35 +20,7 @@ from .image_processor import CustomWatermarkProcessor
 from .image_processor import RoundedCornerProcessor
 from .image_processor import RoundedCornerBlurProcessor
 from .image_processor import RoundedCornerBlurShadowProcessor
-
-# 新的组件架构
-from .effects import (
-    RoundedCornerEffect,
-    ShadowEffect,
-    MarginEffect,
-    BackgroundBlurEffect,
-    BorderEffect,
-    CompositeEffect
-)
-from .watermark_effect import WatermarkEffect
-from .composite_processor import (
-    CompositeProcessor,
-    create_rounded_corner_blur_shadow_processor,
-    create_rounded_corner_blur_processor,
-    create_rounded_corner_processor,
-    create_background_blur_with_border_processor,
-    create_watermark_with_effects_processor
-)
-
-# 可配置的水印处理器
-from .configurable_watermark_processor import (
-    ConfigurableWatermarkProcessor,
-    CustomThemeWatermarkProcessor,
-    create_dark_theme_processor,
-    create_light_theme_processor,
-    create_red_theme_processor,
-    create_blue_theme_processor
-)
+from .image_processor import FitSizeProcessor
 
 # 读取配置
 config = Config('config.yaml')
@@ -70,7 +42,7 @@ PURE_WHITE_MARGIN_PROCESSOR = PureWhiteMarginProcessor(config)
 ROUNDED_CORNER_PROCESSOR = RoundedCornerProcessor(config)
 ROUNDED_CORNER_BLUR_PROCESSOR = RoundedCornerBlurProcessor(config)
 ROUNDED_CORNER_BLUR_SHADOW_PROCESSOR = RoundedCornerBlurShadowProcessor(config)
-
+FIT_SIZE_PROCESSOR = FitSizeProcessor(config)
 
 SEPARATE_LINE = '+' + '-' * 15 + '+' + '-' * 15 + '+'
 
