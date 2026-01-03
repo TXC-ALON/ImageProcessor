@@ -21,6 +21,7 @@ class WatermarkEffect(BaseEffect):
                  # 水印位置配置
                  logo_position: str = 'left',  # 'left' 或 'right'
                  logo_enable: bool = True,
+                 logo_name: str = 'auto',      # 'auto' 或指定的logo文件名
                  
                  # 颜色配置
                  bg_color: str = '#ffffff',
@@ -44,6 +45,7 @@ class WatermarkEffect(BaseEffect):
         # 水印位置配置
         self.logo_position = logo_position
         self.logo_enable = logo_enable
+        self.logo_name = logo_name
         
         # 颜色配置
         self.bg_color = bg_color
@@ -140,7 +142,27 @@ class WatermarkEffect(BaseEffect):
         right = padding_image(right, left.height - right.height, 'b')
         
         # 加载Logo
-        logo = config.load_logo(container.make) if self.logo_enable else None
+        logo = None
+        if self.logo_enable:
+            if self.logo_name == 'auto':
+                # 自动使用照片本身的logo
+                logo = config.load_logo(container.make)
+            else:
+                # 加载指定的logo文件
+                try:
+                    # 构建logo文件路径
+                    import os
+                    logo_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resources', 'logos')
+                    logo_path = os.path.join(logo_dir, self.logo_name)
+                    if os.path.exists(logo_path):
+                        logo = Image.open(logo_path)
+                    else:
+                        # 如果指定的logo文件不存在，回退到自动模式
+                        print(f"警告: 指定的logo文件不存在: {self.logo_name}, 使用自动模式")
+                        logo = config.load_logo(container.make)
+                except Exception as e:
+                    print(f"加载logo文件失败: {e}, 使用自动模式")
+                    logo = config.load_logo(container.make)
         
         if self.logo_enable:
             if self.is_logo_left():

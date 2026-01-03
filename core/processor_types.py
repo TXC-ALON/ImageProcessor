@@ -85,6 +85,7 @@ class WatermarkParams:
     """水印参数"""
     logo_position: str = "left"              # Logo位置：left/right
     logo_enable: bool = True                 # 是否启用Logo
+    logo_name: str = "auto"                  # Logo名称：auto表示自动使用照片本身的logo，或指定logo文件名
     bg_color: str = "#ffffff"                # 背景颜色
     font_color_lt: str = "#212121"           # 左上角字体颜色
     bold_font_lt: bool = True                # 左上角是否加粗

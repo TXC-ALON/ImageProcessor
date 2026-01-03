@@ -449,6 +449,23 @@ class ProcessorCreatorDialog(QDialog):
         self.logo_enable_check.setChecked(True)
         basic_form.addRow("", self.logo_enable_check)
         
+        # Logo选择
+        self.logo_name_combo = QComboBox()
+        # 添加默认选项：自动使用照片本身的logo
+        self.logo_name_combo.addItem("自动使用照片本身的logo", "auto")
+        # 添加可用的logo文件
+        logo_files = [
+            "apple.png", "canon.png", "DJI.jpg", "empty.png", "fujifilm.png",
+            "hasselblad.png", "leica_logo.png", "nikon.png", "olympus_blue_gold.png",
+            "olympus_white_gold.png", "panasonic.png", "panasonic2.png", "pentax.png",
+            "ricoh.png", "sony_dark.png", "sony.png", "xmage.png"
+        ]
+        for logo_file in logo_files:
+            # 显示友好的名称
+            friendly_name = logo_file.replace(".png", "").replace(".jpg", "").replace("_", " ").title()
+            self.logo_name_combo.addItem(friendly_name, logo_file)
+        basic_form.addRow("Logo选择:", self.logo_name_combo)
+        
         # 背景颜色
         bg_color_layout = QHBoxLayout()
         self.bg_color_edit = QLineEdit("#ffffff")
@@ -634,9 +651,15 @@ class ProcessorCreatorDialog(QDialog):
     
     def get_watermark_params(self) -> WatermarkParams:
         """获取水印参数"""
+        # 获取logo_name，如果为None则使用默认值"auto"
+        logo_name = self.logo_name_combo.currentData()
+        if logo_name is None:
+            logo_name = "auto"
+        
         return WatermarkParams(
             logo_position="left" if self.logo_position_combo.currentText() == "左侧" else "right",
             logo_enable=self.logo_enable_check.isChecked(),
+            logo_name=logo_name,
             bg_color=self.bg_color_edit.text(),
             font_color_lt=self.font_color_lt_edit.text(),
             bold_font_lt=self.bold_font_lt_check.isChecked(),

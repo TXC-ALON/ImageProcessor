@@ -40,6 +40,7 @@ class CustomThemeWatermarkProcessor(ProcessorComponent):
     
     def __init__(self, config: Config, 
                  logo_position: str = 'left',
+                 logo_name: str = 'auto',
                  bg_color: str = '#ffffff',
                  font_color_lt: str = '#212121',
                  bold_font_lt: bool = True,
@@ -56,6 +57,7 @@ class CustomThemeWatermarkProcessor(ProcessorComponent):
             config=config,
             logo_position=logo_position,
             logo_enable=True,
+            logo_name=logo_name,
             bg_color=bg_color,
             font_color_lt=font_color_lt,
             bold_font_lt=bold_font_lt,

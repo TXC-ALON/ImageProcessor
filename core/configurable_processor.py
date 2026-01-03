@@ -141,6 +141,7 @@ class ConfigurableProcessor(ProcessorComponent):
             config=self.config,
             logo_position=params.logo_position,
             logo_enable=params.logo_enable,
+            logo_name=params.logo_name,  # 添加logo_name参数
             bg_color=params.bg_color,
             font_color_lt=params.font_color_lt,
             bold_font_lt=params.bold_font_lt,
