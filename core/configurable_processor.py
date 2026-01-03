@@ -101,7 +101,7 @@ class ConfigurableProcessor(ProcessorComponent):
         return SquareEffect(self.config)
     
     def _create_ratio_effect(self, target_ratio: Optional[float]):
-        """创建按比例处理效果"""
+        """创建按比例处理效果，考虑图片方向"""
         class RatioEffect:
             def __init__(self, config, target_ratio):
                 self.config = config
@@ -111,17 +111,21 @@ class ConfigurableProcessor(ProcessorComponent):
                 if container is None:
                     return image
                 
+                # 获取当前图片的实际方向（考虑orientation）
                 current_ratio = container.get_ratio()
-                if abs(current_ratio - self.target_ratio) < 0.01:
+
+                effective_target_ratio = self.target_ratio
+
+                if abs(current_ratio - effective_target_ratio) < 0.01:
                     return image
                 
-                if current_ratio > self.target_ratio:
+                if current_ratio > effective_target_ratio:
                     # 当前宽高比大于目标宽高比，需要增加高度
-                    new_height = int(image.width / self.target_ratio)
+                    new_height = int(image.width / effective_target_ratio)
                     result = ImageOps.expand(image, (0, (new_height - image.height) // 2), fill='white')
                 else:
                     # 当前宽高比小于目标宽高比，需要增加宽度
-                    new_width = int(image.height * self.target_ratio)
+                    new_width = int(image.height * effective_target_ratio)
                     result = ImageOps.expand(image, ((new_width - image.width) // 2, 0), fill='white')
                 
                 return result

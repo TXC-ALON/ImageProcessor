@@ -71,6 +71,12 @@ class OutputSettingsDialog(QDialog):
         self.force_size_checkbox.stateChanged.connect(self.on_force_size_changed)
         size_layout.addRow(self.force_size_checkbox)
         
+        # 自动旋转复选框（当方向不匹配时自动旋转）
+        self.auto_rotate_checkbox = QCheckBox("自动旋转以匹配方向")
+        self.auto_rotate_checkbox.setToolTip("当竖屏图片需要输出为横屏（或反之）时自动旋转图片")
+        self.auto_rotate_checkbox.setChecked(True)  # 默认启用
+        size_layout.addRow(self.auto_rotate_checkbox)
+        
         # 像素尺寸设置
         pixel_layout = QHBoxLayout()
         
@@ -184,6 +190,9 @@ class OutputSettingsDialog(QDialog):
             self.width_spin.setValue(output_width)
             self.height_spin.setValue(output_height)
             
+            auto_rotate = self.current_settings.get('auto_rotate', True)
+            self.auto_rotate_checkbox.setChecked(auto_rotate)
+            
 
             
     def get_settings(self):
@@ -194,6 +203,7 @@ class OutputSettingsDialog(QDialog):
             'format': self.format_combo.currentText().upper(),
             'quality': self.quality_spin.value(),
             'force_size': self.force_size_checkbox.isChecked(),
+            'auto_rotate': self.auto_rotate_checkbox.isChecked(),
             'output_width': self.width_spin.value(),
             'output_height': self.height_spin.value(),
         }

@@ -699,11 +699,7 @@ class MainWindow(QMainWindow):
                 container = ImageContainer(source_path)
                 container.is_use_equivalent_focal_length(config.use_equivalent_focal_length())
                 processor_chain.process(container)
-                
-                # 如果启用了强制输出尺寸，调整图片尺寸
-                if force_size:
-                    self.adjust_image_to_size(container, output_width, output_height)
-                
+
                 # 构建目标文件名
                 source_stem = source_path.stem  # 原文件名（不含扩展名）
                 source_suffix = source_path.suffix  # 原扩展名
@@ -765,64 +761,6 @@ class MainWindow(QMainWindow):
         print(f"图片质量: {quality}%")
         if force_size:
             print(f"输出尺寸: 强制 {output_width}x{output_height} 像素")
-    
-    def adjust_image_to_size(self, container, target_width, target_height):
-        """
-        调整图片到指定的像素尺寸
-        
-        Args:
-            container: ImageContainer对象
-            target_width: 目标宽度（像素）
-            target_height: 目标高度（像素）
-        """
-        from PIL import Image
-        
-        # 获取当前图片尺寸
-        img = container.img
-        current_width = img.width
-        current_height = img.height
-        
-        # 如果当前尺寸已经接近目标尺寸，不需要调整
-        if (abs(current_width - target_width) < 5 and 
-            abs(current_height - target_height) < 5):
-            return
-        
-        # 获取原始图片的DPI信息
-        original_dpi = img.info.get('dpi')
-        
-        # 计算缩放比例（保持宽高比）
-        width_ratio = target_width / current_width
-        height_ratio = target_height / current_height
-        scale_ratio = min(width_ratio, height_ratio)
-        
-        # 计算缩放后的尺寸
-        scaled_width = int(current_width * scale_ratio)
-        scaled_height = int(current_height * scale_ratio)
-        
-        # 缩放图片
-        scaled_img = img.resize((scaled_width, scaled_height), Image.Resampling.LANCZOS)
-        
-        # 创建新图片（白色背景）
-        new_img = Image.new('RGB', (target_width, target_height), (255, 255, 255))
-        
-        # 计算粘贴位置（居中）
-        paste_x = (target_width - scaled_width) // 2
-        paste_y = (target_height - scaled_height) // 2
-        
-        # 将缩放后的图片粘贴到新图片上
-        new_img.paste(scaled_img, (paste_x, paste_y))
-        
-        # 更新容器中的图片
-        container.update_img(new_img)
-        
-        # 保存DPI信息到容器中，以便在保存时使用
-        # 由于我们不能直接修改PIL图片的info字典，我们将在保存时传递dpi参数
-        # 这里我们存储DPI信息到容器的额外属性中
-        if original_dpi:
-            # 创建一个简单的属性来存储DPI信息
-            container._saved_dpi = original_dpi
-        
-        print(f"已调整图片尺寸: {current_width}x{current_height} -> {target_width}x{target_height} (保持比例缩放)")
 
     def create_menu_bar(self):
         """创建菜单栏"""
