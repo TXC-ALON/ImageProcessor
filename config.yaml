@@ -6,7 +6,7 @@ base:
   font: ./resources/fonts/AlibabaPuHuiTi-2-45-Light.otf
   font_size: 1
   input_dir: ./input
-  last_opened_dir: G:\01 DCIM\100NZ502\202507-09
+  last_opened_dir: G:\01 DCIM\100NZ502\1025
   output_dir: G:/Dev/PhotoYin/ImageProcesser/output
   quality: 100
 global:

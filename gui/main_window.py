@@ -773,10 +773,7 @@ class MainWindow(QMainWindow):
         table_columns_action.triggered.connect(self.open_table_columns_dialog)
         settings_menu.addAction(table_columns_action)
         
-        # 水印配置动作
-        watermark_config_action = QAction("水印配置", self)
-        watermark_config_action.triggered.connect(self.open_watermark_config_dialog)
-        settings_menu.addAction(watermark_config_action)
+
         
         # 处理器配置动作
         processor_config_action = QAction("处理器配置", self)
@@ -991,10 +988,4 @@ class MainWindow(QMainWindow):
                          "一个用于批量处理图片的应用程序，支持多种图片处理功能。\n\n"
                          "作者: ImageProcessor Team")
 
-    def open_watermark_config_dialog(self):
-        """打开水印配置对话框"""
-        from .watermark_config_dialog import WatermarkConfigDialog
-        dialog = WatermarkConfigDialog(self, config)
-        if dialog.exec_() == QDialog.Accepted:
-            self.statusBar().showMessage("水印配置已更新", 2000)
-            print("水印配置已更新")
+

@@ -6,7 +6,7 @@ Processor创建对话框
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton,
     QGroupBox, QFormLayout, QSpinBox, QLineEdit, QColorDialog, QCheckBox,
-    QDoubleSpinBox, QMessageBox, QWidget, QTabWidget, QTextEdit
+    QDoubleSpinBox, QMessageBox, QWidget, QTabWidget, QTextEdit, QStackedWidget
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QFont
@@ -184,45 +184,196 @@ class ProcessorCreatorDialog(QDialog):
         self.params_layout.addWidget(group)
     
     def init_transform_params(self):
-        """初始化图像变形参数"""
+        """初始化图像变形参数 - 使用QStackedWidget为每种类型显示不同的参数界面"""
         group = QGroupBox("图像变形参数")
-        form = QFormLayout()
+        main_layout = QVBoxLayout()
         
-        # 变形类型
+        # 变形类型选择
+        type_layout = QHBoxLayout()
+        type_label = QLabel("变形类型:")
         self.transform_type_combo = QComboBox()
         self.transform_type_combo.addItem("1:1填充", TransformType.SQUARE)
         self.transform_type_combo.addItem("按比例处理", TransformType.RATIO)
         self.transform_type_combo.addItem("圆角", TransformType.ROUNDED)
         self.transform_type_combo.currentIndexChanged.connect(self.on_transform_type_changed)
-        form.addRow("变形类型:", self.transform_type_combo)
+        type_layout.addWidget(type_label)
+        type_layout.addWidget(self.transform_type_combo)
+        type_layout.addStretch()
+        main_layout.addLayout(type_layout)
         
-        # 目标比例（仅用于RATIO类型）
-        self.target_ratio_widget = QWidget()
-        target_ratio_layout = QHBoxLayout(self.target_ratio_widget)
-        self.target_ratio_spin = QDoubleSpinBox()
-        self.target_ratio_spin.setRange(0.1, 10.0)
-        self.target_ratio_spin.setValue(1.0)
-        self.target_ratio_spin.setSingleStep(0.1)
-        self.target_ratio_spin.setDecimals(2)
-        target_ratio_layout.addWidget(self.target_ratio_spin)
-        target_ratio_layout.addWidget(QLabel("(宽:高)"))
-        form.addRow("目标比例:", self.target_ratio_widget)
-        self.target_ratio_widget.setVisible(False)
+        # 创建StackedWidget来切换不同的参数界面
+        self.transform_params_stacked = QStackedWidget()
         
-        # 圆角半径（仅用于ROUNDED类型）
-        self.radius_widget = QWidget()
-        radius_layout = QHBoxLayout(self.radius_widget)
+        # 1. SQUARE参数界面
+        self.square_params_widget = self.create_square_params_widget()
+        self.transform_params_stacked.addWidget(self.square_params_widget)
+        
+        # 2. RATIO参数界面
+        self.ratio_params_widget = self.create_ratio_params_widget()
+        self.transform_params_stacked.addWidget(self.ratio_params_widget)
+        
+        # 3. ROUNDED参数界面
+        self.rounded_params_widget = self.create_rounded_params_widget()
+        self.transform_params_stacked.addWidget(self.rounded_params_widget)
+        
+        main_layout.addWidget(self.transform_params_stacked)
+        group.setLayout(main_layout)
+        self.params_layout.addWidget(group)
+        
+        # 初始显示SQUARE界面
+        self.transform_params_stacked.setCurrentIndex(0)
+    
+    def create_square_params_widget(self):
+        """创建1:1填充参数界面"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        
+        # 说明标签
+        info_label = QLabel("1:1填充：将图像调整为正方形，通过添加白色边框保持原始内容比例。")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(info_label)
+        
+        # 添加一些间距
+        layout.addSpacing(20)
+        
+        # 示例说明
+        example_label = QLabel("示例：800×600的图像将变为800×800，上下各添加100像素的白色边框。")
+        example_label.setWordWrap(True)
+        example_label.setStyleSheet("color: #888;")
+        layout.addWidget(example_label)
+        
+        layout.addStretch()
+        return widget
+    
+    def create_ratio_params_widget(self):
+        """创建按比例处理参数界面 - 使用宽度和高度两个参数"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        
+        # 说明标签
+        info_label = QLabel("按比例处理：将图像调整为指定的分辨率，通过添加白色边框实现目标宽高比。")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(info_label)
+        
+        # 宽度参数
+        width_layout = QHBoxLayout()
+        width_label = QLabel("目标宽度:")
+        self.target_width_spin = QSpinBox()
+        self.target_width_spin.setRange(1, 10000)
+        self.target_width_spin.setValue(1980)
+        self.target_width_spin.setSuffix(" 像素")
+        self.target_width_spin.setSingleStep(10)
+        
+        width_layout.addWidget(width_label)
+        width_layout.addWidget(self.target_width_spin)
+        width_layout.addStretch()
+        
+        layout.addLayout(width_layout)
+        
+        # 高度参数
+        height_layout = QHBoxLayout()
+        height_label = QLabel("目标高度:")
+        self.target_height_spin = QSpinBox()
+        self.target_height_spin.setRange(1, 10000)
+        self.target_height_spin.setValue(1080)
+        self.target_height_spin.setSuffix(" 像素")
+        self.target_height_spin.setSingleStep(10)
+        
+        height_layout.addWidget(height_label)
+        height_layout.addWidget(self.target_height_spin)
+        height_layout.addStretch()
+        
+        layout.addLayout(height_layout)
+        
+        # 添加一些间距
+        layout.addSpacing(10)
+        
+        # 计算并显示当前比例
+        self.ratio_display_label = QLabel("当前比例: 1980:1080 ≈ 1.83")
+        self.ratio_display_label.setWordWrap(True)
+        self.ratio_display_label.setStyleSheet("color: #007acc; font-weight: bold;")
+        layout.addWidget(self.ratio_display_label)
+        
+        # 连接信号，当宽度或高度改变时更新比例显示
+        self.target_width_spin.valueChanged.connect(self.update_ratio_display)
+        self.target_height_spin.valueChanged.connect(self.update_ratio_display)
+        
+        # 添加一些间距
+        layout.addSpacing(10)
+        
+        # 常见分辨率示例
+        examples_label = QLabel("常见分辨率：1920×1080 (16:9) · 1280×720 (16:9) · 1080×1080 (1:1) · 1200×800 (3:2)")
+        examples_label.setWordWrap(True)
+        examples_label.setStyleSheet("color: #888;")
+        layout.addWidget(examples_label)
+        
+        layout.addStretch()
+        return widget
+    
+    def update_ratio_display(self):
+        """更新比例显示"""
+        if hasattr(self, 'target_width_spin') and hasattr(self, 'target_height_spin'):
+            width = self.target_width_spin.value()
+            height = self.target_height_spin.value()
+            if height > 0:
+                ratio = width / height
+                # 简化比例显示
+                ratio_str = f"{ratio:.2f}"
+                # 常见比例的名称
+                ratio_name = ""
+                if 0.99 < ratio < 1.01:
+                    ratio_name = " (1:1)"
+                elif 1.32 < ratio < 1.34:
+                    ratio_name = " (4:3)"
+                elif 1.49 < ratio < 1.51:
+                    ratio_name = " (3:2)"
+                elif 1.77 < ratio < 1.79:
+                    ratio_name = " (16:9)"
+                elif 1.24 < ratio < 1.26:
+                    ratio_name = " (5:4)"
+                
+                self.ratio_display_label.setText(f"当前比例: {width}:{height} ≈ {ratio_str}{ratio_name}")
+    
+    def create_rounded_params_widget(self):
+        """创建圆角参数界面"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        
+        # 说明标签
+        info_label = QLabel("圆角：为图像添加圆角效果，可以指定圆角半径或自动计算。")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(info_label)
+        
+        # 圆角半径参数
+        radius_layout = QHBoxLayout()
+        radius_label = QLabel("圆角半径:")
         self.radius_spin = QSpinBox()
-        self.radius_spin.setRange(1, 500)
+        self.radius_spin.setRange(0, 500)
         self.radius_spin.setValue(50)
         self.radius_spin.setSuffix(" 像素")
-        radius_layout.addWidget(self.radius_spin)
-        radius_layout.addWidget(QLabel("(0表示自动计算)"))
-        form.addRow("圆角半径:", self.radius_widget)
-        self.radius_widget.setVisible(False)
+        self.radius_spin.setSpecialValueText("自动计算")
         
-        group.setLayout(form)
-        self.params_layout.addWidget(group)
+        radius_layout.addWidget(radius_label)
+        radius_layout.addWidget(self.radius_spin)
+        radius_layout.addWidget(QLabel("(0表示根据图像尺寸自动计算)"))
+        radius_layout.addStretch()
+        
+        layout.addLayout(radius_layout)
+        
+        # 添加一些间距
+        layout.addSpacing(10)
+        
+        # 建议说明
+        suggestion_label = QLabel("建议：小图像使用10-30像素，中等图像使用30-80像素，大图像使用80-150像素。")
+        suggestion_label.setWordWrap(True)
+        suggestion_label.setStyleSheet("color: #888;")
+        layout.addWidget(suggestion_label)
+        
+        layout.addStretch()
+        return widget
     
     def init_watermark_params(self):
         """初始化水印参数"""
@@ -311,19 +462,16 @@ class ProcessorCreatorDialog(QDialog):
         self.font_color_rb_btn.clicked.connect(lambda: self.choose_color(self.font_color_rb_edit))
     
     def on_transform_type_changed(self, index):
-        """当变形类型改变时更新参数显示"""
+        """当变形类型改变时切换到对应的参数界面"""
         transform_type = self.transform_type_combo.currentData()
         
-        # 显示/隐藏相关参数
-        if transform_type == TransformType.RATIO:
-            self.target_ratio_widget.setVisible(True)
-            self.radius_widget.setVisible(False)
+        # 根据变形类型切换到对应的StackedWidget页面
+        if transform_type == TransformType.SQUARE:
+            self.transform_params_stacked.setCurrentIndex(0)  # SQUARE界面
+        elif transform_type == TransformType.RATIO:
+            self.transform_params_stacked.setCurrentIndex(1)  # RATIO界面
         elif transform_type == TransformType.ROUNDED:
-            self.target_ratio_widget.setVisible(False)
-            self.radius_widget.setVisible(True)
-        else:  # SQUARE
-            self.target_ratio_widget.setVisible(False)
-            self.radius_widget.setVisible(False)
+            self.transform_params_stacked.setCurrentIndex(2)  # ROUNDED界面
     
     def choose_border_color(self):
         """选择边框颜色"""
@@ -373,7 +521,10 @@ class ProcessorCreatorDialog(QDialog):
         transform_type = self.transform_type_combo.currentData()
         
         if transform_type == TransformType.RATIO:
-            target_ratio = self.target_ratio_spin.value()
+            # 从宽度和高度计算比例
+            width = self.target_width_spin.value()
+            height = self.target_height_spin.value()
+            target_ratio = width / height if height > 0 else 1.0
             radius = None
         elif transform_type == TransformType.ROUNDED:
             target_ratio = None
