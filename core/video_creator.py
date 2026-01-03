@@ -180,24 +180,28 @@ class VideoCreator:
     def _build_ffmpeg_command(self, image_list_file: Path) -> List[str]:
         """构建ffmpeg命令"""
         cmd = ['ffmpeg', '-y']  # -y 覆盖输出文件
-
+        
         # 输入图片列表
         cmd.extend(['-f', 'concat', '-safe', '0', '-i', str(image_list_file)])
-
+        
+        # 解析分辨率
+        resolution = self.settings.resolution
+        width, height = resolution.split('x')
+        
         # 视频编码参数
         cmd.extend([
             '-c:v', self.settings.codec,
             '-b:v', self.settings.bitrate,
             '-r', str(self.settings.fps),
             '-pix_fmt', 'yuv420p',
-            '-vf', f'scale={self.settings.resolution}:force_original_aspect_ratio=decrease,pad={self.settings.resolution}:(ow-iw)/2:(oh-ih)/2'
+            '-vf', f'scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2'
         ])
-
+        
         # 音频处理
         if self.settings.include_audio and self.settings.audio_path:
             # 添加音频输入
             cmd.extend(['-i', self.settings.audio_path])
-
+            
             # 音频编码参数
             cmd.extend([
                 '-c:a', 'aac',
@@ -212,10 +216,10 @@ class VideoCreator:
         else:
             # 无音频
             cmd.extend(['-an'])
-
+        
         # 输出文件
         cmd.append(self.settings.output_path)
-
+        
         return cmd
 
     def _calculate_video_duration(self) -> float:

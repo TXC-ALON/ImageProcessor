@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 # 导入视频创建模块
 from core.video_creator import VideoCreator, VideoSettings, PlaybackMode
+from gui.video_settings_dialog import VideoSettingsDialog
 
 
 class DragDropTableView(QTableView):
@@ -77,6 +78,7 @@ class MainWindow(QMainWindow):
         self.image_controls = None
         self.selected_processors = []  # 存储选中的Processor ID列表
         self.image_containers: List[ImageContainer] = []
+        self.video_settings = VideoSettings()  # 视频设置
         self.setup_ui()
 
     def setup_ui(self):
@@ -119,6 +121,10 @@ class MainWindow(QMainWindow):
 
         left_layout.addWidget(image_group)
         left_layout.addWidget(video_group)
+        
+        # 连接视频设置按钮
+        if self.video_controls and 'settings_button' in self.video_controls:
+            self.video_controls['settings_button'].clicked.connect(self.open_video_settings_dialog)
         
         # 连接视频创建按钮
         if self.video_controls and 'create_button' in self.video_controls:
@@ -1005,6 +1011,14 @@ class MainWindow(QMainWindow):
             else:
                 item.setCheckState(state)
 
+    def open_video_settings_dialog(self):
+        """打开视频设置对话框"""
+        dialog = VideoSettingsDialog(self, self.video_settings)
+        if dialog.exec_() == QDialog.Accepted:
+            # 更新视频设置
+            self.video_settings = dialog.get_settings()
+            QMessageBox.information(self, "提示", "视频设置已保存")
+    
     def show_about_dialog(self):
         """显示关于对话框"""
         QMessageBox.about(self, "关于图片处理程序", 
@@ -1019,34 +1033,17 @@ class MainWindow(QMainWindow):
             return
         
         try:
-            # 获取视频设置
-            playback_mode_text = self.video_controls['playback_mode'].currentText()
-            playback_mode = PlaybackMode.FIT_TO_MUSIC if playback_mode_text == "适配音乐时长" else PlaybackMode.FIXED_DURATION
+            # 获取输出路径
+            output_path = self.video_controls['output_path'].text()
+            if not output_path:
+                QMessageBox.warning(self, "警告", "请指定视频输出路径")
+                return
             
-            # 获取音乐路径
-            music_data = self.video_controls['music'].currentData()
-            audio_path = music_data if music_data else None
-            
-            # 创建视频设置
-            settings = VideoSettings(
-                output_path=self.video_controls['output_path'].text(),
-                fps=int(self.video_controls['fps'].text()),
-                codec=self.video_controls['codec'].currentText(),
-                bitrate=self.video_controls['bitrate'].text(),
-                resolution=self.video_controls['resolution'].currentText(),
-                playback_mode=playback_mode,
-                image_duration=float(self.video_controls['image_duration'].text()),
-                transition_duration=float(self.video_controls['transition_duration'].text()),
-                loop_images=self.video_controls['loop_images'].isChecked(),
-                include_audio=self.video_controls['include_audio'].isChecked(),
-                audio_path=audio_path,
-                audio_volume=float(self.video_controls['audio_volume'].text()),
-                fade_in_duration=float(self.video_controls['fade_in'].text()),
-                fade_out_duration=float(self.video_controls['fade_out'].text())
-            )
+            # 更新视频设置的输出路径
+            self.video_settings.output_path = output_path
             
             # 创建视频创建器
-            creator = VideoCreator(settings)
+            creator = VideoCreator(self.video_settings)
             
             # 显示进度对话框
             progress = QProgressDialog("正在创建视频...", "取消", 0, 100, self)
@@ -1067,8 +1064,8 @@ class MainWindow(QMainWindow):
             progress.close()
             
             if success:
-                QMessageBox.information(self, "成功", f"视频创建成功！\n输出路径: {settings.output_path}")
-                self.statusBar().showMessage(f"视频创建成功: {settings.output_path}", 5000)
+                QMessageBox.information(self, "成功", f"视频创建成功！\n输出路径: {self.video_settings.output_path}")
+                self.statusBar().showMessage(f"视频创建成功: {self.video_settings.output_path}", 5000)
             else:
                 QMessageBox.warning(self, "失败", "视频创建失败，请查看控制台日志")
                 self.statusBar().showMessage("视频创建失败", 5000)

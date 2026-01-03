@@ -134,69 +134,14 @@ def create_image_control_group(parent=None):
     }
 
 def create_video_control_group(parent=None):
-    """创建视频控制参数分组"""
-    group = QGroupBox("视频控制参数")
+    """创建视频控制参数分组（简化版）"""
+    group = QGroupBox("视频合成")
     form = QFormLayout()
-
-    # 播放模式
-    cb_playback_mode = QComboBox()
-    cb_playback_mode.addItems(["固定时长", "适配音乐时长"])
     
-    # 编码格式
-    cb_video_codec = QComboBox()
-    cb_video_codec.addItems(["libx264", "libx265", "libvpx-vp9", "libaom-av1"])
-    
-    # 分辨率
-    cb_resolution = QComboBox()
-    cb_resolution.addItems(["1920x1080", "1280x720", "3840x2160", "2560x1440"])
-    
-    # 帧率
-    le_video_fps = QLineEdit("24")
-    le_video_fps.setValidator(QIntValidator(1, 60))
-    
-    # 码率
-    le_video_bitrate = QLineEdit("10M")
-    
-    # 单图时长
-    le_image_duration = QLineEdit("5.0")
-    le_image_duration.setPlaceholderText("每张图停留时间（秒）")
-    le_image_duration.setValidator(QDoubleValidator(0.1, 60.0, 2))
-    
-    # 过渡时长
-    le_transition_duration = QLineEdit("1.0")
-    le_transition_duration.setPlaceholderText("过渡效果时长（秒）")
-    le_transition_duration.setValidator(QDoubleValidator(0.0, 5.0, 2))
-    
-    # 音乐选择
-    cb_music = QComboBox()
-    cb_music.addItem("无音乐", None)
-    
-    # 获取可用的音乐文件
-    from core.video_creator import get_available_music_files
-    music_files = get_available_music_files()
-    for music_file in music_files:
-        cb_music.addItem(music_file.name, str(music_file))
-    
-    # 音频音量
-    le_audio_volume = QLineEdit("1.0")
-    le_audio_volume.setPlaceholderText("音频音量 (0.0-1.0)")
-    le_audio_volume.setValidator(QDoubleValidator(0.0, 2.0, 2))
-    
-    # 淡入淡出时长
-    le_fade_in = QLineEdit("1.0")
-    le_fade_in.setPlaceholderText("淡入时长（秒）")
-    le_fade_in.setValidator(QDoubleValidator(0.0, 5.0, 2))
-    
-    le_fade_out = QLineEdit("1.0")
-    le_fade_out.setPlaceholderText("淡出时长（秒）")
-    le_fade_out.setValidator(QDoubleValidator(0.0, 5.0, 2))
-    
-    # 复选框
-    chk_include_audio = QCheckBox("包含音频")
-    chk_include_audio.setChecked(True)
-    
-    chk_loop_images = QCheckBox("循环播放图片")
-    chk_loop_images.setChecked(False)
+    # 视频设置按钮
+    btn_video_settings = QPushButton("视频设置")
+    btn_video_settings.setToolTip("点击配置视频参数")
+    form.addRow("视频参数:", btn_video_settings)
     
     # 输出路径
     le_output_path = QLineEdit("output/video.mp4")
@@ -207,21 +152,7 @@ def create_video_control_group(parent=None):
     output_layout.addWidget(le_output_path)
     output_layout.addWidget(btn_browse_output)
     
-    # 添加行
-    form.addRow("播放模式:", cb_playback_mode)
-    form.addRow("编码格式:", cb_video_codec)
-    form.addRow("分辨率:", cb_resolution)
-    form.addRow("帧率 (FPS):", le_video_fps)
-    form.addRow("码率:", le_video_bitrate)
-    form.addRow("单图时长:", le_image_duration)
-    form.addRow("过渡时长:", le_transition_duration)
-    form.addRow("音乐选择:", cb_music)
-    form.addRow("音频音量:", le_audio_volume)
-    form.addRow("淡入时长:", le_fade_in)
-    form.addRow("淡出时长:", le_fade_out)
     form.addRow("输出路径:", output_layout)
-    form.addRow(chk_include_audio)
-    form.addRow(chk_loop_images)
     
     # 创建视频按钮
     btn_create_video = QPushButton("创建视频")
@@ -245,19 +176,7 @@ def create_video_control_group(parent=None):
     btn_browse_output.clicked.connect(browse_output)
     
     return group, {
-        'playback_mode': cb_playback_mode,
-        'codec': cb_video_codec,
-        'resolution': cb_resolution,
-        'fps': le_video_fps,
-        'bitrate': le_video_bitrate,
-        'image_duration': le_image_duration,
-        'transition_duration': le_transition_duration,
-        'music': cb_music,
-        'audio_volume': le_audio_volume,
-        'fade_in': le_fade_in,
-        'fade_out': le_fade_out,
-        'include_audio': chk_include_audio,
-        'loop_images': chk_loop_images,
+        'settings_button': btn_video_settings,
         'output_path': le_output_path,
         'create_button': btn_create_video
     }
