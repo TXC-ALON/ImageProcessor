@@ -796,14 +796,7 @@ class MainWindow(QMainWindow):
         table_columns_action = QAction("表格列设置", self)
         table_columns_action.triggered.connect(self.open_table_columns_dialog)
         settings_menu.addAction(table_columns_action)
-        
 
-        
-        # 处理器配置动作
-        processor_config_action = QAction("处理器配置", self)
-        processor_config_action.triggered.connect(self.open_processor_dialog)
-        settings_menu.addAction(processor_config_action)
-        
         # 帮助菜单
         help_menu = menubar.addMenu("帮助")
         
