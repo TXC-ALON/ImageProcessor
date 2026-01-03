@@ -37,6 +37,24 @@ class VideoSettingsDialog(QDialog):
         """设置用户界面"""
         layout = QVBoxLayout()
         
+        # 图片路径设置组
+        image_path_group = QGroupBox("图片路径设置")
+        image_path_layout = QFormLayout()
+        
+        # 图片路径选择
+        self.le_image_path = QLineEdit()
+        self.le_image_path.setPlaceholderText("留空则使用默认output文件夹")
+        self.btn_browse_image_path = QPushButton("浏览")
+        
+        image_path_row_layout = QHBoxLayout()
+        image_path_row_layout.addWidget(self.le_image_path)
+        image_path_row_layout.addWidget(self.btn_browse_image_path)
+        
+        image_path_layout.addRow("图片路径:", image_path_row_layout)
+        
+        image_path_group.setLayout(image_path_layout)
+        layout.addWidget(image_path_group)
+        
         # 播放模式组
         playback_group = QGroupBox("播放模式")
         playback_layout = QFormLayout()
@@ -155,6 +173,19 @@ class VideoSettingsDialog(QDialog):
         # 连接信号
         self.cb_include_audio.toggled.connect(self.on_audio_toggled)
         self.on_audio_toggled(self.cb_include_audio.isChecked())
+        
+        # 连接浏览按钮
+        self.btn_browse_image_path.clicked.connect(self.browse_image_path)
+    
+    def browse_image_path(self):
+        """浏览图片文件夹"""
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "选择图片文件夹",
+            self.le_image_path.text() or str(Path.cwd())
+        )
+        if folder:
+            self.le_image_path.setText(folder)
     
     def on_audio_toggled(self, enabled):
         """音频复选框状态改变"""
@@ -165,6 +196,10 @@ class VideoSettingsDialog(QDialog):
     
     def load_settings(self):
         """加载设置到UI"""
+        # 图片路径
+        if self.settings.image_path:
+            self.le_image_path.setText(self.settings.image_path)
+        
         # 播放模式
         if self.settings.playback_mode == PlaybackMode.FIXED_DURATION:
             self.cb_playback_mode.setCurrentText("固定时长")
@@ -204,6 +239,11 @@ class VideoSettingsDialog(QDialog):
         music_data = self.cb_music.currentData()
         audio_path = music_data if music_data else None
         
+        # 获取图片路径（如果为空字符串，则设置为None）
+        image_path = self.le_image_path.text().strip()
+        if not image_path:
+            image_path = None
+        
         # 创建设置对象
         settings = VideoSettings(
             output_path=self.settings.output_path,  # 保留原始输出路径
@@ -219,7 +259,8 @@ class VideoSettingsDialog(QDialog):
             audio_path=audio_path,
             audio_volume=self.sb_audio_volume.value(),
             fade_in_duration=self.sb_fade_in.value(),
-            fade_out_duration=self.sb_fade_out.value()
+            fade_out_duration=self.sb_fade_out.value(),
+            image_path=image_path
         )
         
         return settings

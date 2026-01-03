@@ -32,6 +32,7 @@ class VideoSettings:
     audio_volume: float = 1.0  # 音频音量（0.0-1.0）
     fade_in_duration: float = 1.0  # 淡入时长（秒）
     fade_out_duration: float = 1.0  # 淡出时长（秒）
+    image_path: Optional[str] = None  # 图片文件夹路径，留空则使用默认output文件夹
 
 
 class VideoCreator:
@@ -160,21 +161,31 @@ class VideoCreator:
         return None
 
     def _get_image_paths_from_output(self) -> List[Path]:
-        """从输出文件夹获取图片路径"""
-        output_dir = Path("output")
-        if not output_dir.exists():
+        """从指定文件夹获取图片路径"""
+        # 如果设置了自定义图片路径，使用自定义路径，否则使用默认output文件夹
+        if self.settings.image_path:
+            image_dir = Path(self.settings.image_path)
+        else:
+            image_dir = Path("output")
+        
+        if not image_dir.exists():
+            logger.warning(f"图片文件夹不存在: {image_dir}")
             return []
-
+        
         # 支持的图片格式
         image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
         image_paths = []
-
+        
         for ext in image_extensions:
-            image_paths.extend(output_dir.glob(f"*{ext}"))
-            image_paths.extend(output_dir.glob(f"*{ext.upper()}"))
-
+            image_paths.extend(image_dir.glob(f"*{ext}"))
+            image_paths.extend(image_dir.glob(f"*{ext.upper()}"))
+        
         # 按文件名排序
         image_paths.sort(key=lambda x: x.name)
+        
+        if not image_paths:
+            logger.warning(f"在文件夹 {image_dir} 中没有找到图片")
+        
         return image_paths
 
     def _build_ffmpeg_command(self, image_list_file: Path) -> List[str]:
