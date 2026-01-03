@@ -121,8 +121,17 @@ class ProcessorCreatorDialog(QDialog):
                 item.widget().deleteLater()
     
     def init_border_params(self):
-        """初始化边框参数"""
+        """初始化边框参数 - 添加说明文本以保持与其他类别相似的高度"""
         group = QGroupBox("边框参数")
+        main_layout = QVBoxLayout()
+        
+        # 说明标签
+        info_label = QLabel("边框：为图像添加指定颜色和大小的边框，可以选择添加边框的边。")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        main_layout.addWidget(info_label)
+        
+        # 参数表单
         form = QFormLayout()
         
         # 边框大小
@@ -147,15 +156,38 @@ class ProcessorCreatorDialog(QDialog):
         self.border_sides_combo.setCurrentText("全部 (tlrb)")
         form.addRow("边框边:", self.border_sides_combo)
         
-        group.setLayout(form)
+        main_layout.addLayout(form)
+        
+        # 添加一些间距
+        main_layout.addSpacing(20)
+        
+        # 示例说明
+        example_label = QLabel("示例：为800×600的图像添加10像素白色边框，可以选择只添加左右边框或上下边框。")
+        example_label.setWordWrap(True)
+        example_label.setStyleSheet("color: #888;")
+        main_layout.addWidget(example_label)
+        
+        # 添加弹性空间
+        main_layout.addStretch()
+        
+        group.setLayout(main_layout)
         self.params_layout.addWidget(group)
         
         # 连接颜色选择按钮
         self.border_color_btn.clicked.connect(self.choose_border_color)
     
     def init_blur_params(self):
-        """初始化模糊参数"""
+        """初始化模糊参数 - 添加说明文本以保持与其他类别相似的高度"""
         group = QGroupBox("模糊参数")
+        main_layout = QVBoxLayout()
+        
+        # 说明标签
+        info_label = QLabel("模糊：为图像背景添加模糊效果，可以调整模糊强度、背景填充比例和混合透明度。")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-style: italic;")
+        main_layout.addWidget(info_label)
+        
+        # 参数表单
         form = QFormLayout()
         
         # 模糊半径
@@ -180,7 +212,27 @@ class ProcessorCreatorDialog(QDialog):
         self.blend_alpha_spin.setDecimals(2)
         form.addRow("混合透明度:", self.blend_alpha_spin)
         
-        group.setLayout(form)
+        main_layout.addLayout(form)
+        
+        # 添加一些间距
+        main_layout.addSpacing(20)
+        
+        # 示例说明
+        example_label = QLabel("示例：为图像添加35像素的模糊背景，背景填充15%，与原图以10%的透明度混合。")
+        example_label.setWordWrap(True)
+        example_label.setStyleSheet("color: #888;")
+        main_layout.addWidget(example_label)
+        
+        # 参数说明
+        param_info_label = QLabel("提示：模糊半径越大效果越明显，背景填充百分比控制背景区域大小，混合透明度控制模糊层与原图的融合程度。")
+        param_info_label.setWordWrap(True)
+        param_info_label.setStyleSheet("color: #666; font-size: 12px;")
+        main_layout.addWidget(param_info_label)
+        
+        # 添加弹性空间
+        main_layout.addStretch()
+        
+        group.setLayout(main_layout)
         self.params_layout.addWidget(group)
     
     def init_transform_params(self):
